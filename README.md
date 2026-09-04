@@ -8,11 +8,11 @@ El desarrollo va avanzado en backend y base de datos. El frontend existe como ma
 
 | Componente | Estado |
 |---|---|
-| Base de datos (schema + seed) | ✅ Completo |
-| API backend (FastAPI) | ✅ Endpoints principales implementados |
-| Autenticación (JWT) | ✅ Registro, login, usuario actual |
-| Frontend (HTML/CSS/JS) | 🟡 Maqueta con datos estáticos, sin integrar con la API |
-| Despliegue (Docker Compose) | 🟡 DB + API dockerizados, falta servicio de frontend |
+| Base de datos (schema + seed) |  Completo |
+| API backend (FastAPI) |  Endpoints principales implementados |
+| Autenticación (JWT) |  Registro, login, usuario actual |
+| Frontend (HTML/CSS/JS) |  Maqueta con datos estáticos, sin integrar con la API |
+| Despliegue (Docker Compose) |  DB + API dockerizados, falta servicio de frontend |
 
 ## Estructura del repositorio
 
