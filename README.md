@@ -1,4 +1,4 @@
-#Gestión de Conciertos en la Nube
+# Gestión de Conciertos en la Nube
 
 Plataforma web para la compra y gestión de boletos de conciertos. El proyecto está compuesto por una base de datos PostgreSQL, una API backend en FastAPI y una interfaz frontend, pensada para desplegarse en la nube mediante Docker.
 
