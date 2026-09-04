@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoundPass — Vive la música en vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ NAVBAR (shared) ============ -->
+<header class="topbar">
+  <div class="topbar__inner">
+    <button class="brand" data-nav="home" aria-label="Ir al inicio">
+      <span class="brand__mark">
+        <span class="bar bar--1"></span><span class="bar bar--2"></span><span class="bar bar--3"></span><span class="bar bar--4"></span>
+      </span>
+      SoundPass
+    </button>
+
+    <nav class="primary-nav" aria-label="Navegación principal">
+      <button class="primary-nav__link" data-nav="listing" data-active-on="listing">Conciertos</button>
+      <button class="primary-nav__link" data-nav="mytickets" data-active-on="mytickets,cancelled">Mis boletos</button>
+      <button class="primary-nav__link" data-nav="home">Ayuda</button>
+    </nav>
+
+    <div class="topbar__right">
+      <label class="search" aria-label="Buscar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Buscar artista, conciertos...">
+      </label>
+      <button class="avatar-btn" aria-label="Cuenta">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.8-4 5-6 8-6s6.2 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ============ 1. HOME ============ -->
+  <section class="screen" id="screen-home" data-screen>
+    <div class="hero">
+      <div class="hero__inner">
+        <h1 class="hero__title">Vive <span class="hero__title--accent">la música</span><br>en vivo</h1>
+        <p class="hero__sub">Compra tus boletos de forma rápida, segura y sin filas.</p>
+        <button class="btn btn--primary btn--lg" data-nav="listing">
+          Ver conciertos
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="section-wrap">
+      <div class="section-head">
+        <h2>Conciertos destacados</h2>
+        <button class="link-btn" data-nav="listing">Ver todos</button>
+      </div>
+      <div class="feature-grid" id="featured-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. LISTING ============ -->
+  <section class="screen" id="screen-listing" data-screen>
+    <div class="listing-layout">
+      <aside class="filters">
+        <h3>Filtros</h3>
+
+        <div class="filter-group">
+          <label for="f-city">Ciudad</label>
+          <select id="f-city">
+            <option>Todas</option>
+            <option>Bogotá</option>
+            <option>Medellín</option>
+            <option>Cali</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="f-date">Fecha</label>
+          <select id="f-date">
+            <option>Todas</option>
+            <option>Este mes</option>
+            <option>Próximos 3 meses</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Género</label>
+          <div class="checkbox-list">
+            <label class="checkbox"><input type="checkbox"><span>Pop</span></label>
+            <label class="checkbox"><input type="checkbox"><span>Rock</span></label>
+            <label class="checkbox"><input type="checkbox"><span>Urbano</span></label>
+            <label class="checkbox"><input type="checkbox"><span>Electrónica</span></label>
+          </div>
+        </div>
+      </aside>
+
+      <div class="listing-main">
+        <div class="listing-head">
+          <h2>Conciertos (12)</h2>
+          <select class="sort-select">
+            <option>Más próximos</option>
+            <option>Precio: menor a mayor</option>
+            <option>Precio: mayor a menor</option>
+          </select>
+        </div>
+
+        <div class="concert-list" id="concert-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. DETAIL ============ -->
+  <section class="screen" id="screen-detail" data-screen>
+    <button class="back-link" data-nav="listing">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Volver a conciertos
+    </button>
+
+    <div class="detail-layout">
+      <div class="detail-left">
+        <div class="detail-poster poster--weeknd">
+          <span class="poster__tag">THE WEEKND</span>
+          <span class="poster__tag2">AFTER HOURS TOUR</span>
+        </div>
+        <div>
+          <h1 class="detail-title">The Weeknd</h1>
+          <p class="detail-sub">After Hours Tour</p>
+        </div>
+
+        <div class="stage-map">
+          <span class="stage-map__label">ESCENARIO</span>
+          <div class="stage-zone stage-zone--vip">VIP</div>
+          <div class="stage-zone stage-zone--pref">Preferencial</div>
+          <div class="stage-zone stage-zone--gen">General</div>
+        </div>
+      </div>
+
+      <aside class="ticket-panel">
+        <h3>Tipos de boleto</h3>
+
+        <div class="ticket-options" id="ticket-options"></div>
+
+        <div class="meta-info">
+          <p><span class="dot">•</span> Dom, 15 Jun 2025 · 8:00 p.m.</p>
+          <p><span class="dot">•</span> Movistar Arena, Bogotá</p>
+          <p><span class="dot">•</span> Capacidad: 14.000 personas</p>
+        </div>
+        <p class="detail-blurb">Una noche inolvidable con los mayores éxitos de The Weeknd.</p>
+
+        <div class="qty-row">
+          <span>Cantidad</span>
+          <div class="stepper">
+            <button class="stepper__btn" id="qty-minus" aria-label="Restar">−</button>
+            <span class="stepper__val" id="qty-val">2</span>
+            <button class="stepper__btn" id="qty-plus" aria-label="Sumar">+</button>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--full" data-nav="checkout">Continuar</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 4. CHECKOUT ============ -->
+  <section class="screen" id="screen-checkout" data-screen>
+    <h1 class="page-title">Checkout</h1>
+    <div class="checkout-layout">
+      <div class="summary-card">
+        <h3>Resumen de compra</h3>
+        <div class="summary-item">
+          <div class="thumb thumb--weeknd"></div>
+          <div>
+            <p class="summary-item__title">The Weeknd</p>
+            <p class="summary-item__sub">After Hours Tour</p>
+            <p class="summary-item__meta">15 Jun 2025 · 8:00 p.m.</p>
+            <p class="summary-item__meta">Movistar Arena, Bogotá</p>
+          </div>
+        </div>
+
+        <dl class="summary-rows">
+          <div><dt>Tipo:</dt><dd>Preferencial</dd></div>
+          <div><dt>Cantidad:</dt><dd id="co-qty">2</dd></div>
+          <div><dt>Precio por boleto:</dt><dd>$180.000</dd></div>
+        </dl>
+        <div class="summary-divider"></div>
+        <div class="summary-rows">
+          <div><dt>Subtotal:</dt><dd id="co-subtotal">$360.000</dd></div>
+          <div><dt>Cargo por servicio:</dt><dd>$12.000</dd></div>
+        </div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span id="co-total">$372.000</span>
+        </div>
+      </div>
+
+      <div class="payment-card">
+        <h3>Método de pago</h3>
+        <div class="payment-options" id="payment-options">
+          <label class="payment-option is-selected">
+            <input type="radio" name="pay" checked>
+            <span class="radio-dot"></span>
+            <span>Tarjeta de crédito / débito</span>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="pay">
+            <span class="radio-dot"></span>
+            <span>PSE</span>
+            <span class="pay-badge">PSE</span>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="pay">
+            <span class="radio-dot"></span>
+            <span>Nequi / Daviplata</span>
+            <span class="pay-badge">NEQUI</span>
+          </label>
+        </div>
+
+        <div class="card-fields">
+          <div class="field">
+            <label>Número de tarjeta</label>
+            <div class="input-with-icon">
+              <input type="text" value="4242 4242 4242 4242" inputmode="numeric">
+              <span class="visa-badge">VISA</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Vencimiento</label>
+              <input type="text" value="12/28">
+            </div>
+            <div class="field">
+              <label>CVC</label>
+              <input type="text" value="123">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--full" data-nav="success">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="2"/></svg>
+          Pagar $372.000
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. SUCCESS ============ -->
+  <section class="screen screen--center" id="screen-success" data-screen>
+    <div class="status-icon status-icon--success">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h1 class="status-title">¡Compra exitosa!</h1>
+    <p class="status-sub">Tus boletos han sido generados correctamente.</p>
+
+    <div class="order-card">
+      <div class="order-card__head">
+        <span>Orden #SP-458792</span>
+        <span class="order-card__date">10 May 2025 · 10:24 a. m.</span>
+      </div>
+      <div class="summary-item">
+        <div class="thumb thumb--weeknd"></div>
+        <div>
+          <p class="summary-item__title">The Weeknd</p>
+          <p class="summary-item__sub">After Hours Tour</p>
+          <p class="summary-item__meta">15 Jun 2025 · 8:00 p.m.</p>
+          <p class="summary-item__meta">Movistar Arena, Bogotá</p>
+        </div>
+      </div>
+      <div class="order-card__divider"></div>
+      <div class="order-card__row">
+        <span>Boletos:</span>
+        <span>2 × Preferencial</span>
+      </div>
+      <div class="order-card__row order-card__row--total">
+        <span>Total:</span>
+        <span>$372.000</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn--primary" data-nav="mytickets">Ver mis boletos</button>
+      <button class="btn btn--outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Descargar comprobante
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ 6/9. MY TICKETS ============ -->
+  <section class="screen" id="screen-mytickets" data-screen>
+    <h1 class="page-title">Mis boletos</h1>
+
+    <div class="tabs">
+      <button class="tab is-active" data-tab="proximos">Próximos</button>
+      <button class="tab" data-tab="historial">Historial</button>
+    </div>
+
+    <div class="ticket-list" id="ticket-list"></div>
+  </section>
+
+  <!-- ============ 8. CANCELLED ============ -->
+  <section class="screen screen--center" id="screen-cancelled" data-screen>
+    <div class="status-icon status-icon--success">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h1 class="status-title">Compra cancelada</h1>
+    <p class="status-sub">Tu compra ha sido cancelada correctamente.</p>
+
+    <div class="info-banner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 8h.01M11 12h1v5h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>El reembolso será procesado en un plazo de 3 a 5 días hábiles al mismo método de pago.</span>
+    </div>
+
+    <div class="order-card order-card--compact">
+      <div class="order-card__head">
+        <span>Orden #SP-458792</span>
+        <span class="order-card__date">Cancelada: 10 May 2025</span>
+      </div>
+    </div>
+
+    <button class="btn btn--outline" data-nav="mytickets">Volver a mis boletos</button>
+  </section>
+
+</main>
+
+<!-- ============ 7. CANCEL MODAL ============ -->
+<div class="modal-overlay" id="cancel-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <button class="modal__close" id="modal-close" aria-label="Cerrar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="status-icon status-icon--warn">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9L2.5 17.5a1.8 1.8 0 001.6 2.7h15.8a1.8 1.8 0 001.6-2.7L13.7 3.9a1.8 1.8 0 00-3.4 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h2 class="modal__title" id="modal-title">Cancelar compra</h2>
+    <p class="modal__sub">¿Estás seguro de que deseas cancelar esta compra? Esta acción no se puede deshacer. El reembolso será procesado en un plazo de 3 a 5 días hábiles.</p>
+
+    <div class="modal-ticket">
+      <div class="thumb thumb--weeknd"></div>
+      <div>
+        <p class="summary-item__title">The Weeknd</p>
+        <p class="summary-item__meta">15 Jun 2025 · Movistar Arena</p>
+        <p class="summary-item__meta">2 boletos · Preferencial</p>
+      </div>
+    </div>
+
+    <div class="modal__actions">
+      <button class="btn btn--outline btn--full" id="modal-cancel">Volver</button>
+      <button class="btn btn--danger btn--full" id="modal-confirm">Sí, cancelar compra</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
