@@ -89,7 +89,7 @@ input,select{ font-family: inherit; }
 .primary-nav__link:hover{ color: var(--text); background: rgba(255,255,255,.04); }
 .primary-nav__link.is-active{ color: var(--text); background: rgba(139,92,246,.14); }
 
-.topbar__right{ display:flex; align-items:center; gap:12px; }
+.topbar__right{ display:flex; align-items:center; gap:12px; position:relative; }
 .search{
   display:flex; align-items:center; gap:8px;
   background: var(--bg-card); border:1px solid var(--border-soft);
@@ -470,6 +470,27 @@ input,select{ font-family: inherit; }
   border-radius: var(--radius-s); padding:12px; margin: 6px 0 4px;
 }
 .modal__actions{ display:flex; gap:10px; width:100%; margin-top:10px; }
+
+/* Authentication */
+.auth-modal{ align-items:stretch; text-align:left; max-width:430px; }
+.auth-modal .modal__title, .auth-modal .modal__sub{ text-align:center; }
+.auth-modal__eyebrow{ color:var(--violet-400); text-align:center; font:700 11px var(--font-display); letter-spacing:.16em; }
+.auth-form{ display:flex; flex-direction:column; gap:14px; margin-top:10px; }
+.auth-form[hidden]{ display:none; }
+.auth-form .field input{ padding:11px 12px; }
+.auth-switch{ align-self:center; margin-top:2px; }
+.form-message{ min-height:18px; font-size:12.5px; color:var(--green); line-height:1.4; }
+.form-message.is-error{ color:var(--red); }
+.avatar-btn.is-signed-in{ color:var(--violet-400); border-color:var(--violet-500); background:rgba(139,92,246,.14); }
+.account-menu{ position:absolute; right:0; top:46px; min-width:210px; padding:8px; border:1px solid var(--border); border-radius:var(--radius-m); background:var(--bg-raised); box-shadow:var(--shadow-pop); z-index:30; }
+.account-menu[hidden]{ display:none; }
+.account-menu__greeting{ padding:9px 10px 11px; border-bottom:1px solid var(--border-soft); font-size:13px; font-weight:600; color:var(--text); }
+.account-menu__item{ width:100%; padding:10px; margin-top:3px; border:0; border-radius:var(--radius-s); color:var(--text-dim); background:none; text-align:left; font-size:13.5px; cursor:pointer; }
+.account-menu__item:hover{ background:var(--bg-card); color:var(--text); }
+.account-menu__item--danger{ color:var(--red); }
+.account-menu__item--danger:hover{ background:var(--red-bg); color:var(--red); }
+.empty-state{ text-align:center; padding:48px 22px; border:1px dashed var(--border); border-radius:var(--radius-m); color:var(--text-dim); }
+.empty-state h3{ color:var(--text); margin-bottom:8px; }.empty-state p{ margin-bottom:18px; font-size:13.5px; }
 
 /* ============================================================
    Responsive

@@ -7,7 +7,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg2://soundpass_user:soundpass_pass@127.0.0.1:5432/soundpass"
     secret_key: str = "change-this-to-a-long-random-string"
     access_token_expire_minutes: int = 1440
-    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
+    allowed_origins: str = (
+        "http://localhost:5173,http://127.0.0.1:5173,"
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:5500,http://127.0.0.1:5500"
+    )
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
