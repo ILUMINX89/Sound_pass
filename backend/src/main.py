@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
-from src.routers import auth, concerts, orders
+from src.routers import auth, concerts, orders, venues
+
+
 
 app = FastAPI(
     title="SoundPass API",
@@ -21,6 +23,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(concerts.router)
 app.include_router(orders.router)
+app.include_router(venues.router)
 
 
 @app.get("/health", tags=["health"])
