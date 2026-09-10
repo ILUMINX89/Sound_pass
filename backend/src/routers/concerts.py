@@ -63,3 +63,53 @@ def get_concert(concert_id: int, db: Session = Depends(get_db)):
     if not concert:
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
     return concert
+
+@router.post("", response_model=schemas.ConcertDetailOut, status_code=201)
+def create_concert(payload: schemas.ConcertCreate, db: Session = Depends(get_db)):
+    venue = db.get(models.Venue, payload.venue_id)
+    if not venue:
+        raise HTTPException(status_code=404, detail="Recinto no encontrado")
+
+    concert = models.Concert(**payload.model_dump())
+    db.add(concert)
+    db.commit()
+    db.refresh(concert)
+    return concert
+
+
+@router.put("/{concert_id}", response_model=schemas.ConcertDetailOut)
+def update_concert(concert_id: int, payload: schemas.ConcertUpdate, db: Session = Depends(get_db)):
+    concert = db.get(models.Concert, concert_id)
+    if not concert:
+        raise HTTPException(status_code=404, detail="Concierto no encontrado")
+
+    if payload.venue_id is not None:
+        venue = db.get(models.Venue, payload.venue_id)
+        if not venue:
+            raise HTTPException(status_code=404, detail="Recinto no encontrado")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(concert, field, value)
+
+    db.commit()
+    db.refresh(concert)
+    return concert
+
+
+@router.delete("/{concert_id}", status_code=204)
+def delete_concert(concert_id: int, db: Session = Depends(get_db)):
+    concert = db.get(models.Concert, concert_id)
+    if not concert:
+        raise HTTPException(status_code=404, detail="Concierto no encontrado")
+    db.delete(concert)
+    db.commit()
+    return None
+
+
+@router.get("/{concert_id}/ticket_types", response_model=list[schemas.TicketTypeOut])
+def get_concert_ticket_types(concert_id: int, db: Session = Depends(get_db)):
+    """Endpoint de relación explícito: boletos de un concierto puntual."""
+    concert = db.get(models.Concert, concert_id)
+    if not concert:
+        raise HTTPException(status_code=404, detail="Concierto no encontrado")
+    return concert.ticket_types
