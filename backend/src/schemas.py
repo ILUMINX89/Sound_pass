@@ -116,3 +116,12 @@ class OrderOut(BaseModel):
     cancelled_at: datetime | None
     concert: ConcertListOut
     items: list[OrderItemOut]
+
+# ============================================================
+# Venues — CRUD
+# ============================================================
+class VenueCreate(BaseModel):
+    name: str
+    city: str
+    address: str | None = None
+    capacity: int | None = None
