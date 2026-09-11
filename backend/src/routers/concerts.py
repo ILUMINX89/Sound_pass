@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -17,7 +19,7 @@ def list_concerts(
 ):
     query = db.query(models.Concert).options(
         joinedload(models.Concert.venue), joinedload(models.Concert.ticket_types)
-    )
+    ).filter(models.Concert.event_date >= date.today())
 
     if city:
         query = query.join(models.Venue).filter(func.lower(models.Venue.city) == city.lower())

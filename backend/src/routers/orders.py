@@ -58,7 +58,7 @@ def create_order(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user),
 ):
-    concert = db.get(models.Concert, payload.concert_id)
+    concert = db.query(models.Concert).filter(models.Concert.id == payload.concert_id).with_for_update().first()
     if not concert:
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
@@ -67,7 +67,12 @@ def create_order(
     order_items: list[models.OrderItem] = []
 
     for item in payload.items:
-        ticket_type = db.get(models.TicketType, item.ticket_type_id)
+        ticket_type = (
+            db.query(models.TicketType)
+            .filter(models.TicketType.id == item.ticket_type_id)
+            .with_for_update()
+            .first()
+        )
         if not ticket_type or ticket_type.concert_id != concert.id:
             raise HTTPException(status_code=400, detail="Tipo de boleto inválido para este concierto")
         if item.quantity > ticket_type.quantity_available:
@@ -182,9 +187,16 @@ def cancel_order(
     if order.status == "cancelled":
         raise HTTPException(status_code=400, detail="Esta compra ya fue cancelada")
 
-    # release the reserved tickets back into inventory
+    # Lock each inventory row before returning tickets, so a cancellation cannot
+    # overwrite a simultaneous purchase of the same ticket type.
     for item in order.items:
-        item.ticket_type.quantity_available += item.quantity
+        ticket_type = (
+            db.query(models.TicketType)
+            .filter(models.TicketType.id == item.ticket_type_id)
+            .with_for_update()
+            .first()
+        )
+        ticket_type.quantity_available += item.quantity
 
     order.status = "cancelled"
     order.cancelled_at = datetime.now(timezone.utc)

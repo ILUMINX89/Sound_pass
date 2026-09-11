@@ -40,6 +40,7 @@ class VenueOut(BaseModel):
     name: str
     city: str
     address: str | None = None
+    capacity: int | None = None
 
 
 # ============================================================
