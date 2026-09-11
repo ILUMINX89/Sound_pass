@@ -140,3 +140,10 @@ class ConcertUpdate(BaseModel):
     event_time: time | None = None
     description: str | None = None
     image_url: str | None = None
+# Venues — CRUD
+# ============================================================
+class VenueCreate(BaseModel):
+    name: str
+    city: str
+    address: str | None = None
+    capacity: int | None = None
