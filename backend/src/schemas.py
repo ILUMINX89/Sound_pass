@@ -118,6 +118,28 @@ class OrderOut(BaseModel):
     items: list[OrderItemOut]
 
 # ============================================================
+# Concerts — CRUD (admin)
+# ============================================================
+class ConcertCreate(BaseModel):
+    artist: str
+    tour_name: str
+    genre: str
+    venue_id: int
+    event_date: date
+    event_time: time
+    description: str | None = None
+    image_url: str | None = None
+
+
+class ConcertUpdate(BaseModel):
+    artist: str | None = None
+    tour_name: str | None = None
+    genre: str | None = None
+    venue_id: int | None = None
+    event_date: date | None = None
+    event_time: time | None = None
+    description: str | None = None
+    image_url: str | None = None
 # Venues — CRUD
 # ============================================================
 class VenueCreate(BaseModel):
