@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     )
     secret_key: str = "change-this-to-a-long-random-string"
     access_token_expire_minutes: int = 1440
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+
     allowed_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"
         "http://localhost:3000,http://127.0.0.1:3000,"

@@ -67,6 +67,7 @@ class ConcertListOut(BaseModel):
     event_time: time
     venue: VenueOut
     price_from: Decimal
+    image_url: str | None = None
 
 
 class ConcertDetailOut(BaseModel):
@@ -118,6 +119,7 @@ class OrderOut(BaseModel):
     concert: ConcertListOut
     items: list[OrderItemOut]
 
+
 # ============================================================
 # Concerts — CRUD (admin)
 # ============================================================
@@ -141,6 +143,8 @@ class ConcertUpdate(BaseModel):
     event_time: time | None = None
     description: str | None = None
     image_url: str | None = None
+
+
 # Venues — CRUD
 # ============================================================
 class VenueCreate(BaseModel):
