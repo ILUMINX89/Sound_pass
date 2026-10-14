@@ -1,0 +1,100 @@
+name: Project Automation
+
+# Mueve las historias de usuario en el tablero SoundPass:
+# - Issue asignado            -> In Progress
+# - PR abierto o reabierto    -> sus historias vinculadas pasan a Review
+# - PR mergeado               -> sus historias vinculadas pasan a Done
+on:
+  issues:
+    types: [assigned]
+  pull_request:
+    types: [opened, reopened, closed]
+
+jobs:
+  mover-tarjetas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mover tarjetas en el GitHub Project
+        uses: actions/github-script@v7
+        with:
+          # GITHUB_TOKEN no puede editar Projects de una cuenta personal,
+          # por eso se usa un token personal guardado como secreto.
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const OWNER = 'ILUMINX89';
+            const PROJECT_NUMBER = 2;
+
+            // 1. Decidir a qué columna va la tarjeta y qué historias mover
+            let destino;
+            let historias = [];
+            if (context.eventName === 'issues') {
+              destino = 'In Progress';
+              historias = [context.payload.issue.node_id];
+            } else {
+              const pr = context.payload.pull_request;
+              if (context.payload.action === 'closed') {
+                if (!pr.merged) {
+                  core.info('PR cerrado sin merge: no se mueve nada');
+                  return;
+                }
+                destino = 'Done';
+              } else {
+                destino = 'Review';
+              }
+              const r = await github.graphql(`
+                query($id: ID!) {
+                  node(id: $id) {
+                    ... on PullRequest {
+                      closingIssuesReferences(first: 10) { nodes { id number } }
+                    }
+                  }
+                }`, { id: pr.node_id });
+              historias = r.node.closingIssuesReferences.nodes.map(n => n.id);
+            }
+            if (historias.length === 0) {
+              core.info('No hay historias vinculadas a este PR');
+              return;
+            }
+
+            // 2. Buscar el Project, el campo Status y la columna destino
+            const p = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                user(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField { id options { id name } }
+                    }
+                  }
+                }
+              }`, { owner: OWNER, number: PROJECT_NUMBER });
+            const project = p.user.projectV2;
+            const columna = project.field.options.find(
+              o => o.name.toLowerCase() === destino.toLowerCase());
+            if (!columna) {
+              core.setFailed(`No existe la columna ${destino} en el tablero`);
+              return;
+            }
+
+            // 3. Mover cada historia (si no está en el tablero, la agrega)
+            for (const contentId of historias) {
+              const add = await github.graphql(`
+                mutation($project: ID!, $content: ID!) {
+                  addProjectV2ItemById(input: { projectId: $project, contentId: $content }) {
+                    item { id }
+                  }
+                }`, { project: project.id, content: contentId });
+              await github.graphql(`
+                mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $project, itemId: $item, fieldId: $field,
+                    value: { singleSelectOptionId: $option }
+                  }) { projectV2Item { id } }
+                }`, {
+                  project: project.id,
+                  item: add.addProjectV2ItemById.item.id,
+                  field: project.field.id,
+                  option: columna.id,
+                });
+              core.info(`Tarjeta movida a ${destino}`);
+            }
