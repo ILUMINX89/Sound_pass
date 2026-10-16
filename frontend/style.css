@@ -116,6 +116,16 @@ input, select { font-family: inherit; }
 [data-tip]:hover::after,
 [data-tip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* Estado deshabilitado (el script desactiva "Continuar" y "Pagar") */
+.btn:disabled, .btn[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+  filter: grayscale(.35);
+  transform: none !important;
+  box-shadow: none !important;
+}
+.btn:disabled::before { display: none; }
+
 /* ============================================================
    Top bar
    ============================================================ */
@@ -686,17 +696,6 @@ input, select { font-family: inherit; }
   opacity: 0;
   transition: opacity .18s ease;
 }
-.concert-row::after {
-  content: "›";
-  width: 34px; height: 34px; flex-shrink: 0;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; line-height: 1;
-  color: var(--wine-300);
-  background: rgba(240, 73, 106, .1);
-  border: 1px solid rgba(240, 73, 106, .25);
-  transition: background .18s ease, color .18s ease, transform .18s ease;
-}
 .concert-row:hover {
   border-color: rgba(240, 73, 106, .5);
   background: var(--bg-card-hover);
@@ -704,7 +703,6 @@ input, select { font-family: inherit; }
   box-shadow: 0 18px 38px -22px rgba(209, 31, 63, .55);
 }
 .concert-row:hover::before { opacity: 1; }
-.concert-row:hover::after { background: var(--wine-500); color: #fff; transform: translateX(3px); }
 
 .concert-row__art { width: 104px; height: 78px; border-radius: 14px; flex-shrink: 0; }
 .concert-row__body { flex: 1; min-width: 0; }
@@ -1021,6 +1019,7 @@ input, select { font-family: inherit; }
 .order-card__head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-faint); margin-bottom: 16px; }
 .order-card--compact .order-card__head { justify-content: center; gap: 16px; }
 .order-card__date {}
+.order-card .summary-item { border-bottom: 0; padding-bottom: 0; margin-bottom: 4px; }
 .order-card__divider { height: 1px; background: var(--border-soft); margin: 14px 0; }
 .order-card__row { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--text-dim); margin-bottom: 7px; }
 .order-card__row--total { font-size: 17px; font-weight: 700; color: var(--text); margin-top: 10px; font-family: var(--font-display); }
@@ -1290,29 +1289,255 @@ input, select { font-family: inherit; }
 .site-footer__brand::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--grad); }
 
 /* ============================================================
-   Responsive
+   HU-02 — RESPONSIVE
+   Breakpoints: 1180 (laptop chico) · 980 (tableta) · 768 · 640 (móvil) · 400 (móvil chico)
+   Sin JavaScript: el menú móvil es una segunda fila con scroll horizontal.
    ============================================================ */
-@media (max-width: 980px) {
-  .feature-grid, .listing-layout, .detail-layout, .checkout-layout, .perks { grid-template-columns: 1fr; }
-  .primary-nav { display: none; }
-  .search { width: 180px; }
-  .hero { padding: 48px 28px; }
-  .hero__title { font-size: 38px; }
-  .hero__visual { display: none; }
-  .filters, .ticket-panel { position: static; }
-  .concert-row::after { display: none; }
+
+/* ---------- Base: evitar desbordes involuntarios en cualquier tamaño ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: clip; }
+img, svg, video { max-width: 100%; }
+
+/* Los hijos de grid/flex pueden encogerse (sin esto, textos largos empujan el layout) */
+.listing-main, .detail-left, .ticket-panel, .summary-card, .payment-card,
+.concert-row__body, .ticket-card__body, .feature-card__body { min-width: 0; }
+.concert-row__title, .concert-row__sub, .ticket-card__title, .ticket-card__sub,
+.feature-card__title, .feature-card__meta, .summary-item__title, .summary-item__sub,
+.summary-item__meta, .detail-title, .detail-sub, .poster__tag, .poster__tag2,
+.modal__title, .modal__sub, .meta-info p, .detail-blurb, .order-card__row span { overflow-wrap: anywhere; }
+
+/* Modales: nunca más altos que la pantalla; el contenido hace scroll dentro */
+.modal-overlay { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.modal { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+.modal > * { flex-shrink: 0; }
+.modal-ticket { min-width: 0; }
+.modal-ticket > div { min-width: 0; flex: 1; }
+
+/* Zonas seguras (notch / barra de gestos) */
+.topbar__inner { padding-left: max(28px, env(safe-area-inset-left)); padding-right: max(28px, env(safe-area-inset-right)); }
+.site-footer__inner { padding-bottom: max(26px, env(safe-area-inset-bottom)); }
+
+/* Menú de cuenta nunca se sale de la pantalla */
+.account-menu { max-width: calc(100vw - 24px); }
+
+/* Corrección: `.filter-group label` (mayúsculas, 11.5px) también afectaba a los
+   <label class="checkbox"> de género; se restablece su estilo propio */
+.filter-group .checkbox { display: flex; margin-bottom: 0; font-size: 13.5px; font-weight: 400; text-transform: none; letter-spacing: normal; color: var(--text-dim); }
+
+/* Campos de checkout: permitir que Vencimiento / CVC bajen de línea si no caben */
+.field-row { flex-wrap: wrap; }
+.field-row .field { min-width: 100px; }
+
+/* ---------- Laptop pequeño ---------- */
+@media (max-width: 1180px) {
+  .hero { padding: 60px 44px; }
+  .hero__visual { width: 240px; height: 240px; right: 28px; }
+  .float-chip--a { right: -4px; }
+  .float-chip--b { right: -8px; }
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .listing-layout { grid-template-columns: 220px 1fr; gap: 22px; }
+  .concert-row__art { width: 88px; height: 68px; }
 }
+
+/* ---------- Tableta (≤ 980px) ---------- */
+@media (max-width: 980px) {
+  /* Barra superior en dos filas: marca + buscador + cuenta / menú principal */
+  .topbar__inner { flex-wrap: wrap; gap: 10px 14px; padding-top: 10px; padding-bottom: 10px; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+  .brand { order: 1; }
+  .topbar__right { order: 2; flex: 1; justify-content: flex-end; min-width: 0; }
+  .search { flex: 1; width: auto; max-width: 380px; min-width: 0; }
+  .primary-nav {
+    order: 3; flex: 1 1 100%;
+    display: flex; gap: 4px;
+    overflow-x: auto; scrollbar-width: none;
+    padding: 2px 0 2px;
+  }
+  .primary-nav::-webkit-scrollbar { display: none; }
+  .primary-nav__link { flex: 1; text-align: center; white-space: nowrap; padding: 9px 14px; }
+
+  #app { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+
+  /* Hero */
+  .hero { padding: 48px 32px; }
+  .hero__title { font-size: clamp(34px, 6.4vw, 46px); }
+  .hero__visual { display: none; }
+  .perks { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .perk { flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; }
+
+  /* Listado: filtros arriba, compactos */
+  .listing-layout { grid-template-columns: 1fr; gap: 18px; margin-top: 20px; }
+  .filters { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; padding: 18px; }
+  .filters h3, .filter-group:has(#genre-filters), .filter-tip { grid-column: 1 / -1; }
+  .checkbox-list { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .checkbox { border: 1px solid var(--border-soft); border-radius: 999px; padding: 8px 14px; }
+  .checkbox:has(input:checked) { border-color: var(--wine-400); }
+  .listing-head { flex-wrap: wrap; gap: 12px; }
+
+  /* Detalle: poster → título → compra → mapa del escenario */
+  .detail-layout { grid-template-columns: 1fr; gap: 20px; }
+  .detail-left { display: contents; }
+  .detail-poster { order: 1; height: auto; min-height: 280px; }
+  .detail-left > div:not([class]) { order: 2; }
+  .ticket-panel { order: 3; position: static; }
+  .stage-map { order: 4; }
+
+  /* Checkout */
+  .checkout-layout { grid-template-columns: 1fr; gap: 20px; }
+  .summary-card, .payment-card { padding: 24px; }
+}
+
+/* ---------- Tableta vertical / móvil grande (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  /* 16px evita el zoom automático de iOS al enfocar un campo */
+  .field input, .field-row input, .filter-group select, .sort-select, .search input { font-size: 16px; }
+  .page-title { font-size: 24px; margin: 18px 0 20px; }
+  .section-head h2, .listing-head h2 { font-size: 19px; }
+}
+
+/* ---------- Móvil (≤ 640px) ---------- */
 @media (max-width: 640px) {
-  .topbar__inner { padding: 12px 16px; gap: 12px; }
-  #app { padding: 0 16px 50px; }
-  .search { width: 130px; }
-  .concert-row, .ticket-card { flex-wrap: wrap; }
-  .concert-row__price { margin-left: auto; }
-  .ticket-card__actions { flex-direction: row; align-items: center; width: 100%; }
-  .help-contact { flex-direction: column; text-align: center; }
+  .topbar__inner { gap: 8px 10px; padding-top: 8px; padding-bottom: 8px; padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .brand { font-size: 16px; }
+  .search { padding: 8px 12px; }
+  .primary-nav__link { font-size: 13.5px; padding: 8px 10px; }
+  .account-menu { top: 48px; min-width: 200px; }
+
+  #app { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); padding-bottom: 44px; }
+
+  /* Hero */
+  .hero { margin-top: 16px; padding: 34px 22px; border-radius: 22px; }
+  .hero__title { font-size: clamp(30px, 9vw, 38px); }
+  .hero__sub { font-size: 15px; margin-bottom: 22px; }
+  .perks { grid-template-columns: 1fr; gap: 10px; }
+  .perk { flex-direction: row; align-items: center; }
+  .section-wrap { margin-top: 36px; }
+  .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+  .feature-card__art { height: 170px; }
+
+  /* Filtros: una columna, sin tip largo */
+  .filters { grid-template-columns: 1fr; }
+  .filter-tip { display: none; }
+  .sort-select { width: 100%; }
+  .listing-head h2 { width: 100%; }
+
+  /* Fila de concierto: [foto | datos] / [precio | botón] */
+  .concert-row {
+    display: grid;
+    grid-template-columns: 84px 1fr auto;
+    grid-template-areas: "art body body" "price price btn";
+    gap: 12px 14px;
+    align-items: center;
+    padding: 14px;
+  }
+  .concert-row__art { grid-area: art; width: 84px; height: 84px; }
+  .concert-row__body { grid-area: body; }
+  .concert-row__price { grid-area: price; text-align: left; margin: 0; display: flex; align-items: baseline; gap: 8px; }
+  .concert-row__price small { display: inline; }
+  .concert-row > .btn { grid-area: btn; }
+  .concert-row__meta { flex-direction: column; gap: 4px; }
+
+  /* Detalle */
+  .detail-poster { height: auto; min-height: 220px; padding: 18px; border-radius: 22px; }
+  .poster__tag { font-size: 24px; }
+  .detail-title { font-size: 23px; }
+  .stage-map { padding: 20px 14px; }
+  .ticket-panel { padding: 20px 18px; border-radius: 22px; }
+  .stage-zone--vip, .stage-zone--pref, .stage-zone--gen { max-width: 100%; }
+
+  /* Checkout */
+  .summary-card, .payment-card { padding: 20px 18px; border-radius: 22px; }
+  .summary-total { padding: 14px; }
+  .summary-total span:last-child { font-size: 19px; }
+  .summary-rows div { gap: 14px; }
+  .summary-rows dd { text-align: right; }
+  .thumb { width: 60px; height: 60px; }
+
+  /* Pantallas de estado */
+  .screen--center { margin-top: 24px; }
+  .status-icon { margin-top: 20px; width: 72px; height: 72px; }
+  .status-title { font-size: 24px; }
+  .order-card { padding: 20px 16px; border-radius: 20px; }
+  .order-card__head { flex-wrap: wrap; gap: 4px 12px; }
+  .order-card__row { gap: 14px; }
+  .order-card__row span:last-child { text-align: right; }
+  .btn-row { flex-direction: column; width: 100%; }
+  .btn-row .btn { width: 100%; }
+  .screen--center > .btn { width: 100%; }
+  .info-banner { padding: 13px 14px; }
+
+  /* Mis boletos */
+  .tabs { display: flex; width: 100%; }
+  .tab { flex: 1; padding: 10px 12px; }
+  .ticket-card {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    grid-template-areas: "art body" "actions actions";
+    gap: 12px 14px;
+    align-items: start;
+    padding: 14px;
+  }
+  .ticket-card__art { grid-area: art; width: 72px; height: 72px; }
+  .ticket-card__body { grid-area: body; }
+  .ticket-card__actions { grid-area: actions; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; padding-top: 12px; border-top: 1px dashed var(--border); }
+
+  /* Modales */
+  .modal { padding: 28px 18px 20px; border-radius: 22px; }
   .modal__actions { flex-direction: column; }
+  .modal__title { font-size: 18px; padding: 0 28px; }
+
+  /* Ayuda */
+  .help-header { margin: 28px auto 22px; }
+  .help-header .page-title { font-size: 26px; }
+  .faq-item summary { padding: 16px 54px 16px 16px; font-size: 14px; }
+  .faq-item p { margin: 0 16px; }
+  .help-contact { flex-direction: column; text-align: center; padding: 20px 18px; }
+  .help-contact .btn { width: 100%; }
+
+  .site-footer__inner { justify-content: center; text-align: center; padding-left: 16px; padding-right: 16px; }
+}
+
+/* ---------- Móvil pequeño (≤ 400px) ---------- */
+@media (max-width: 400px) {
+  .brand { font-size: 0; gap: 0; }            /* solo el logo; el botón conserva aria-label */
+  .hero .btn--lg { width: 100%; }
+  .concert-row { grid-template-columns: 72px 1fr auto; }
+  .concert-row__art { width: 72px; height: 72px; }
+  .detail-poster { min-height: 190px; }
+  .stage-map__label { padding: 7px 24px; }
+}
+
+/* ---------- Pantallas táctiles: objetivos de toque cómodos (≥ 44px) ---------- */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn--sm { min-height: 40px; padding-left: 16px; padding-right: 16px; }
+  .primary-nav__link, .tab, .back-link, .account-menu__item { min-height: 44px; }
+  .link-btn { min-height: 44px; display: inline-flex; align-items: center; }
+  .avatar-btn { width: 44px; height: 44px; }
+  .stepper__btn { width: 44px; height: 44px; }
+  .modal__close { width: 40px; height: 40px; }
+  .checkbox { min-height: 44px; }
+  .checkbox input { width: 20px; height: 20px; }
+  .ticket-option { min-height: 58px; }
+  .payment-option { min-height: 54px; }
+  .faq-item summary { min-height: 56px; display: flex; align-items: center; }
+  .field input, .filter-group select { min-height: 46px; }
+}
+
+/* En táctiles no hay "hover": evitar elementos que se quedan levantados tras tocar */
+@media (hover: none) {
+  .feature-card:hover, .concert-row:hover, .ticket-card:hover, .perk:hover,
+  .btn:hover, .ticket-option:hover:not(.is-disabled), .back-link:hover { transform: none; }
+  .feature-card__art::after { opacity: 1; bottom: 14px; }   /* la flecha se ve siempre */
+}
+
+/* Móvil en horizontal (poca altura): la barra fija ocuparía demasiado */
+@media (max-height: 480px) and (orientation: landscape) {
+  .topbar { position: static; }
+  .filters, .ticket-panel { position: static; }
+  .modal { padding-top: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
