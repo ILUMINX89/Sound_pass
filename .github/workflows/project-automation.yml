@@ -10,7 +10,7 @@ on:
   issues:
     types: [opened, edited, assigned]
   pull_request:
-    types: [opened, reopened, closed]
+    types: [opened, reopened, edited, closed]
 
 jobs:
   mover-tarjetas:
@@ -144,6 +144,16 @@ jobs:
                   }
                 }`, { id: pr.node_id });
               historias = r.node.closingIssuesReferences.nodes.map(n => n.id);
+              // GitHub solo vincula "Closes #N" cuando el PR va a main;
+              // para PRs hacia development se leen los números de la descripción.
+              const numeros = [...(pr.body || '').matchAll(/\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi)]
+                .map(m => Number(m[1]));
+              for (const numero of numeros) {
+                const { data: issue } = await github.rest.issues.get({
+                  owner: context.repo.owner, repo: context.repo.repo, issue_number: numero,
+                });
+                if (!issue.pull_request && !historias.includes(issue.node_id)) historias.push(issue.node_id);
+              }
             }
             if (historias.length === 0) {
               core.info('No hay historias vinculadas a este PR');
