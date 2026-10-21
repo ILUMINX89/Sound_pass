@@ -1,0 +1,156 @@
+name: Project Automation
+
+# Mantiene el tablero SoundPass al día sin moverlo a mano:
+# - Issue creado o editado -> etiquetas + campos Rol, Tipo, Prioridad, Sprint y Estimación
+#                             según lo elegido en la plantilla del issue
+# - Issue asignado         -> In Progress
+# - PR abierto o reabierto -> sus historias vinculadas pasan a Review
+# - PR mergeado            -> sus historias vinculadas pasan a Done
+on:
+  issues:
+    types: [opened, edited, assigned]
+  pull_request:
+    types: [opened, reopened, closed]
+
+jobs:
+  mover-tarjetas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Actualizar el GitHub Project
+        uses: actions/github-script@v7
+        with:
+          # GITHUB_TOKEN no puede editar Projects de una cuenta personal,
+          # por eso se usa un token personal guardado como secreto.
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const OWNER = 'ILUMINX89';
+            const PROJECT_NUMBER = 2;
+            const CAMPOS = ['Rol', 'Tipo', 'Prioridad', 'Sprint', 'Estimación'];
+
+            // ---------- Datos del tablero ----------
+            const p = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                user(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 50) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                      }
+                    }
+                  }
+                }
+              }`, { owner: OWNER, number: PROJECT_NUMBER });
+            const project = p.user.projectV2;
+            const campo = nombre => project.fields.nodes.find(
+              f => f && f.name && f.name.toLowerCase() === nombre.toLowerCase());
+
+            async function agregarAlTablero(contentId) {
+              const r = await github.graphql(`
+                mutation($project: ID!, $content: ID!) {
+                  addProjectV2ItemById(input: { projectId: $project, contentId: $content }) {
+                    item { id }
+                  }
+                }`, { project: project.id, content: contentId });
+              return r.addProjectV2ItemById.item.id;
+            }
+
+            async function ponerValor(itemId, nombreCampo, valor) {
+              const f = campo(nombreCampo);
+              if (!f) {
+                core.warning(`El tablero no tiene el campo "${nombreCampo}"`);
+                return;
+              }
+              const opcion = f.options.find(
+                o => o.name.toLowerCase() === String(valor).trim().toLowerCase());
+              if (!opcion) {
+                core.warning(`El campo "${nombreCampo}" no tiene la opción "${valor}"`);
+                return;
+              }
+              await github.graphql(`
+                mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $project, itemId: $item, fieldId: $field,
+                    value: { singleSelectOptionId: $option }
+                  }) { projectV2Item { id } }
+                }`, { project: project.id, item: itemId, field: f.id, option: opcion.id });
+              core.info(`${nombreCampo} = ${opcion.name}`);
+            }
+
+            // Lee las respuestas de la plantilla: "### Rol\n\nBackend\n\n### Tipo ..."
+            function leerPlantilla(cuerpo) {
+              const datos = {};
+              const partes = (cuerpo || '').split(/^###\s+/m).slice(1);
+              for (const parte of partes) {
+                const [titulo, ...resto] = parte.split('\n');
+                const valor = resto.join('\n').trim();
+                if (valor && valor !== '_No response_') datos[titulo.trim()] = valor;
+              }
+              return datos;
+            }
+
+            // ---------- Issue creado o editado: etiquetas y campos ----------
+            if (context.eventName === 'issues' && ['opened', 'edited'].includes(context.payload.action)) {
+              const issue = context.payload.issue;
+              const datos = leerPlantilla(issue.body);
+              const esBug = issue.labels.some(l => l.name === 'bug');
+              if (esBug && !datos['Tipo']) datos['Tipo'] = 'Bug';
+
+              const etiquetas = [];
+              if (datos['Rol']) etiquetas.push(`rol: ${datos['Rol'].toLowerCase()}`);
+              if (datos['Tipo']) etiquetas.push(`tipo: ${datos['Tipo'].toLowerCase()}`);
+              if (datos['Prioridad']) etiquetas.push(`prioridad: ${datos['Prioridad'].toLowerCase()}`);
+              if (datos['Sprint']) etiquetas.push(datos['Sprint'].toLowerCase());
+              if (etiquetas.length === 0) {
+                core.info('El issue no usa una plantilla con campos: no se cambia nada');
+                return;
+              }
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, labels: etiquetas,
+              });
+              core.info(`Etiquetas: ${etiquetas.join(', ')}`);
+
+              const itemId = await agregarAlTablero(issue.node_id);
+              for (const nombre of CAMPOS) {
+                if (datos[nombre]) await ponerValor(itemId, nombre, datos[nombre]);
+              }
+              return;
+            }
+
+            // ---------- Mover tarjetas entre columnas ----------
+            let destino;
+            let historias = [];
+            if (context.eventName === 'issues') {
+              destino = 'In Progress';
+              historias = [context.payload.issue.node_id];
+            } else {
+              const pr = context.payload.pull_request;
+              if (context.payload.action === 'closed') {
+                if (!pr.merged) {
+                  core.info('PR cerrado sin merge: no se mueve nada');
+                  return;
+                }
+                destino = 'Done';
+              } else {
+                destino = 'Review';
+              }
+              const r = await github.graphql(`
+                query($id: ID!) {
+                  node(id: $id) {
+                    ... on PullRequest {
+                      closingIssuesReferences(first: 10) { nodes { id } }
+                    }
+                  }
+                }`, { id: pr.node_id });
+              historias = r.node.closingIssuesReferences.nodes.map(n => n.id);
+            }
+            if (historias.length === 0) {
+              core.info('No hay historias vinculadas a este PR');
+              return;
+            }
+            for (const contentId of historias) {
+              const itemId = await agregarAlTablero(contentId);
+              await ponerValor(itemId, 'Status', destino);
+              core.info(`Tarjeta movida a ${destino}`);
+            }
