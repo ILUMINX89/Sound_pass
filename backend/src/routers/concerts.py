@@ -52,6 +52,7 @@ def list_concerts(
         # ----------------------------------------------------
 
         price_from = min((t.price for t in c.ticket_types), default=0)
+        tickets_available = sum(t.quantity_available for t in c.ticket_types)
 
         # ----------------------------------------------------
         # RESPUESTA DEL CONCIERTO
@@ -68,6 +69,7 @@ def list_concerts(
                 image_url=c.image_url,
                 venue=c.venue,
                 price_from=price_from,
+                tickets_available=tickets_available,
             )
         )
 

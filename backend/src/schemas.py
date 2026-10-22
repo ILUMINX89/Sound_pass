@@ -67,6 +67,7 @@ class ConcertListOut(BaseModel):
     event_time: time
     venue: VenueOut
     price_from: Decimal
+    tickets_available: int | None = None
     image_url: str | None = None
 
 
