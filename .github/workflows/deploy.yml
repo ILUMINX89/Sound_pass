@@ -1,0 +1,65 @@
+name: Despliegue (CD)
+
+# Cada vez que se hace merge a la rama production, la app se despliega sola
+# en la máquina virtual de la nube y se verifica que responda.
+#
+# El usuario de la VM está en el grupo docker y es dueño de /var/www/soundpass,
+# así que no se usa sudo (sudo pediría contraseña y el despliegue se quedaría colgado).
+#
+# Secretos que debe tener el repositorio (Settings > Secrets and variables > Actions):
+#   VM_HOST     IP pública de la máquina virtual
+#   VM_USER     usuario SSH de la máquina virtual
+#   VM_SSH_KEY  llave privada SSH con acceso a la máquina virtual
+#   VM_APP_DIR  carpeta de la app en la máquina virtual (ej. /home/soundpass/Sound_pass)
+on:
+  push:
+    branches: [production]
+  workflow_dispatch:
+
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Copiar el código a la máquina virtual
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          source: "backend,frontend,database,docker-compose.yml"
+          target: ${{ secrets.VM_APP_DIR }}
+
+      - name: Reconstruir y reiniciar los contenedores
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.VM_APP_DIR }}"
+            docker compose up -d --build
+            cp frontend/* /var/www/soundpass/
+            docker compose ps
+
+      - name: Verificar que la app responde
+        run: |
+          for intento in 1 2 3 4 5 6; do
+            if curl -fsS "http://${{ secrets.VM_HOST }}/api/health"; then
+              echo ""
+              echo "La app responde en http://${{ secrets.VM_HOST }} ✅"
+              exit 0
+            fi
+            echo "Intento $intento: la API todavía no responde, esperando 10 s..."
+            sleep 10
+          done
+          echo "La API no respondió después del despliegue ❌"
+          exit 1
