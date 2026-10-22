@@ -103,3 +103,32 @@ Aquí registramos **cada vez que algo no funcionó** o tuvimos que tomar una dec
 | IA en la implementación y automatización | Planeado para la entrega final |
 
 **Quién:** todo el equipo
+
+### 2026-10-22 · Despliegue en una máquina virtual nueva
+**Qué pasó:** solo una persona tenía acceso a la VM donde corría la app, así que el resto del equipo no podía desplegar ni configurar el despliegue automático.
+**Causa:** la VM se creó con el usuario y la contraseña de un solo miembro y nunca se compartió un acceso para automatización.
+**Cómo se resolvió:** se creó una VM nueva (`soundpass-v2`, 20.80.47.160). Se instaló Docker y nginx, se levantó la app con `docker compose` y las credenciales del servidor se generaron con `openssl rand` dentro de la VM, en un `docker-compose.override.yml` que no está en Git. Se creó una llave SSH solo para despliegues y se guardó como secreto `VM_SSH_KEY` en GitHub.
+**Pros de la solución:** el despliegue ya no depende de una persona; nadie ve las contraseñas de la base de datos ni la clave JWT; el usuario de la VM no necesita `sudo` para desplegar (está en el grupo `docker` y es dueño de `/var/www/soundpass`).
+**Contras de la solución:** hay dos VMs que mantener mientras se apaga la vieja; la llave de despliegue da acceso total a la VM si se filtra.
+**Lección / qué cambiamos:** desde el inicio crear un acceso por llave para la automatización, separado de los accesos personales.
+**Quién:** @imaakro
+
+### 2026-10-22 · La app no cargaba desde afuera (puerto 80 cerrado)
+**Qué pasó:** dentro de la VM `curl http://127.0.0.1/api/health` respondía bien, pero desde el navegador salía `ERR_CONNECTION_TIMED_OUT`.
+**Causa:** el *Network Security Group* de Azure solo tenía abierto el puerto 22 (SSH).
+**Cómo se resolvió:** se agregó una regla de entrada (*inbound*) para el puerto 80/TCP. Los puertos 8000 (API) y 5432 (base de datos) se dejaron cerrados.
+**Pros de la solución:** solo se expone nginx; la API y la base de datos no son accesibles desde internet.
+**Contras de la solución:** la regla la tiene que crear quien es dueño de la suscripción de Azure.
+**Lección / qué cambiamos:** si funciona por dentro y no por fuera, revisar primero el firewall de la nube antes de tocar la app.
+**Quién:** @imaakro
+
+### 2026-10-22 · No aparecía ningún concierto en producción
+**Qué pasó:** la app cargaba y se podía crear usuario, pero la lista de conciertos salía vacía.
+**Causa:** los conciertos de `database/seed.sql` tenían fechas de 2025 y la API solo muestra conciertos con `event_date >= date.today()`. Al pasar el tiempo, todos quedaron como pasados.
+**Cómo se resolvió:** en la VM se movieron las fechas 2 años con un `UPDATE` en PostgreSQL, y en el repositorio se corrigieron las fechas del seed (bug con su propio PR).
+**Pros de la solución:** el arreglo en la VM fue inmediato y el del repo evita que vuelva a pasar en una base nueva.
+**Contras de la solución:** las fechas del seed siguen siendo fijas; en el futuro volverán a quedar en el pasado.
+**Lección / qué cambiamos:** los datos de ejemplo con fechas deberían calcularse relativos a la fecha actual (por ejemplo `CURRENT_DATE + 30`).
+**Quién:** @imaakro
+
+
