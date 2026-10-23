@@ -117,7 +117,6 @@ El siguiente diagrama representa las siete tablas de PostgreSQL definidas en `da
 
 ```mermaid
 erDiagram
-    direction TB
     users ||--o{ orders : realiza
     venues ||--o{ concerts : aloja
     concerts ||--o{ ticket_types : ofrece
@@ -237,11 +236,11 @@ SoundPass utiliza un **frontend separado que consume una API REST**. Sus respons
 ### Diagrama de responsabilidades
 
 ```mermaid
-flowchart TB
+graph TD
     V["Vista: HTML, CSS y JavaScript"]
     C["Controladores: routers FastAPI"]
     M["Modelo: entidades SQLAlchemy"]
-    D[("PostgreSQL")]
+    D[(PostgreSQL)]
     S["Servicios: proveedores y PDF"]
     E["Spotify, Wikipedia y Ticketmaster"]
 
