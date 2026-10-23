@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session, joinedload
 from src import models, schemas
 from src.database import get_db
 
+from fastapi.responses import JSONResponse
+from src.wikipedia import get_artist_bio, WikipediaUnavailableError
+
 router = APIRouter(prefix="/concerts", tags=["concerts"])
 
 
@@ -202,3 +205,56 @@ def get_concert_ticket_types(concert_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
     return concert.ticket_types
+
+# ============================================================
+# BIOGRAFÍA DEL ARTISTA — WIKIPEDIA
+# ============================================================
+
+
+@router.get(
+    "/{concert_id}/artist-bio",
+    response_model=schemas.ArtistBioOut,
+    summary="Consultar biografía del artista desde Wikipedia",
+    responses={
+        404: {"description": "Concierto no encontrado"},
+        503: {
+            "model": schemas.ArtistBioOut,
+            "description": "Wikipedia no está disponible",
+        },
+    },
+)
+def get_concert_artist_bio(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    """Obtiene una biografía breve en español y el enlace a su fuente.
+
+    Puede devolver los estados ok, not_found o ambiguous.
+    Si el proveedor falla, devuelve HTTP 503 y estado unavailable.
+    """
+    concert = db.get(models.Concert, concert_id)
+
+    if concert is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Concierto no encontrado",
+        )
+
+    try:
+        result = get_artist_bio(concert.artist)
+    except WikipediaUnavailableError:
+        payload = schemas.ArtistBioOut(
+            concert_id=concert.id,
+            artist=concert.artist,
+            status="unavailable",
+        )
+        return JSONResponse(
+            status_code=503,
+            content=payload.model_dump(mode="json"),
+        )
+
+    return schemas.ArtistBioOut(
+        concert_id=concert.id,
+        artist=concert.artist,
+        **result,
+    )
