@@ -27,9 +27,9 @@ SELECT setval('venues_id_seq', (SELECT MAX(id) FROM venues));
 -- concerts
 -- ------------------------------------------------------------
 INSERT INTO concerts (id, artist, tour_name, genre, venue_id, event_date, event_time, description, image_url) VALUES
-(1, 'The Weeknd',       'After Hours Tour',      'Pop',        1, '2025-06-15', '20:00', 'Una noche inolvidable con los mayores éxitos de The Weeknd.', '/images/weeknd.jpg'),
-(2, 'Imagine Dragons',  'LOOM World Tour',       'Rock',       2, '2025-06-22', '20:00', 'Imagine Dragons regresa a Colombia con su gira mundial LOOM.', '/images/imagine-dragons.jpg'),
-(3, 'Dua Lipa',         'Radical Optimism Tour', 'Pop',        1, '2025-07-05', '20:00', 'Dua Lipa presenta su álbum Radical Optimism en vivo.', '/images/dua-lipa.jpg');
+(1, 'The Weeknd',       'After Hours Tour',      'Pop',        1, '2027-06-15', '20:00', 'Una noche inolvidable con los mayores éxitos de The Weeknd.', '/images/weeknd.jpg'),
+(2, 'Imagine Dragons',  'LOOM World Tour',       'Rock',       2, '2027-06-22', '20:00', 'Imagine Dragons regresa a Colombia con su gira mundial LOOM.', '/images/imagine-dragons.jpg'),
+(3, 'Dua Lipa',         'Radical Optimism Tour', 'Pop',        1, '2027-07-05', '20:00', 'Dua Lipa presenta su álbum Radical Optimism en vivo.', '/images/dua-lipa.jpg');
 
 SELECT setval('concerts_id_seq', (SELECT MAX(id) FROM concerts));
 
