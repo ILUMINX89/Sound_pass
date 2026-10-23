@@ -1404,6 +1404,43 @@ input, select { font-family: inherit; }
 }
  
 /* ============================================================
+   SOBRE EL ARTISTA (biografía de Wikipedia)
+   Prefijo ab- para no chocar con otros selectores
+   ============================================================ */
+.ab { margin-top: 44px; }
+.ab[hidden] { display: none; }
+.ab-head { margin-bottom: 20px; }
+.ab-head h2 { font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.ab-head h2::before { content: ""; width: 5px; height: 24px; border-radius: 3px; background: var(--grad); }
+.ab-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 28px; padding: 24px 28px; box-shadow: var(--shadow-card); }
+.ab-text { margin: 0; max-width: 78ch; font-size: 15px; line-height: 1.7; color: var(--text-dim); overflow-wrap: anywhere; }
+.ab-source-row { margin: 16px 0 0; }
+.ab-source { display: inline-flex; align-items: center; min-height: 44px; padding: 4px 2px; color: var(--wine-400); font-size: 13.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; border-radius: 6px; }
+.ab-source:hover { color: #fff; }
+.ab-source:focus-visible, .ab-retry:focus-visible { outline: 2px solid var(--wine-400); outline-offset: 3px; }
+ 
+/* Cargando */
+.ab-card.is-loading .ab-status { margin: 12px 0 0; font-size: 13px; color: var(--text-faint); }
+.ab-skel { height: 84px; border-radius: 16px; background: linear-gradient(90deg, #1d1016 0%, #2a1620 50%, #1d1016 100%); background-size: 200% 100%; animation: dm-shimmer 1.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .ab-skel { animation: none; } }
+ 
+/* Sin biografía / ambiguo / error */
+.ab-card.is-notice { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--amber-bg); border: 1px dashed rgba(255, 196, 107, .35); padding: 18px 20px; }
+.ab-card.is-notice .ab-status { margin: 0; flex: 1 1 240px; font-size: 14px; line-height: 1.5; color: var(--text-dim); }
+.ab-retry { flex-shrink: 0; min-height: 44px; background: rgba(255, 255, 255, .04); color: var(--text); border: 1px solid var(--border); box-shadow: none; }
+.ab-retry:hover:not(:disabled) { background: rgba(240, 73, 106, .12); border-color: var(--wine-500); }
+.ab-retry:disabled { opacity: .55; cursor: not-allowed; }
+ 
+@media (max-width: 640px) {
+  .ab { margin-top: 36px; }
+  .ab-head h2 { font-size: 21px; }
+  .ab-card { border-radius: 22px; padding: 18px 16px; }
+  .ab-text { font-size: 14.5px; }
+  .ab-card.is-notice { padding: 16px; }
+  .ab-retry { width: 100%; }
+}
+ 
+/* ============================================================
    HU-02 — RESPONSIVE
    Breakpoints: 1180 (laptop chico) · 980 (tableta) · 768 · 640 (móvil) · 400 (móvil chico)
    Sin JavaScript: el menú móvil es una segunda fila con scroll horizontal.
