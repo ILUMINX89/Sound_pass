@@ -1777,3 +1777,22 @@ img, svg, video { max-width: 100%; }
   .od-concert__art { width: 100%; height: 120px; }
 }
  
+/* ============================================================
+   Cuenta regresiva y estado de disponibilidad (.cs)
+   ============================================================ */
+.cs-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cs-row:empty { display: none; }
+.cs { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; padding: 4px 10px; border-radius: 999px; color: var(--text); background: rgba(12, 6, 8, .62); border: 1px solid rgba(255, 255, 255, .16); backdrop-filter: blur(6px); }
+.cs svg { flex-shrink: 0; }
+.cs--dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.cs--hot, .cs--low { color: var(--amber); background: rgba(40, 24, 8, .72); border-color: rgba(255, 196, 107, .4); }
+.cs--soldout { color: var(--red); background: rgba(48, 10, 14, .78); border-color: rgba(255, 90, 95, .45); }
+.cs--muted { color: var(--text-faint); }
+.cs-row--detail { margin-top: 14px; }
+.cs-row--detail .cs { font-size: 12.5px; padding: 6px 13px; }
+.feature-card__art .cs-row { position: absolute; left: 12px; top: 12px; z-index: 3; margin: 0; max-width: calc(100% - 24px); }
+.is-soldout .dynamic-art { background-color: #3a3a3a; background-blend-mode: luminosity; }
+.ticket-option small.is-low { color: var(--amber); font-weight: 600; }
+.ticket-option small.is-out { color: var(--red); font-weight: 600; }
+@media (max-width: 400px) { .cs { font-size: 11px; padding: 3px 8px; } }
+ 

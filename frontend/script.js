@@ -20,7 +20,7 @@ function fmtTime(value) {
 }
 function fmtDateTime(value) { return value ? new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)).replace(/\./g, "") : ""; }
 function imageUrl(path) { return !path ? "" : /^(https?:|data:|blob:)/i.test(path) ? path : `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`; }
-function art(c, className = "") { const url = imageUrl(c?.image_url), style = url ? ` style="background-image:linear-gradient(0deg,rgba(0,0,0,.35),rgba(0,0,0,.08)),url('${esc(url)}')"` : ""; return `<div class="${className} dynamic-art${url ? " has-image" : ""}"${style} role="img" aria-label="${esc(c?.artist || "Concierto")}"></div>`; }
+function art(c, className = "", extra = "") { const url = imageUrl(c?.image_url), style = url ? ` style="background-image:linear-gradient(0deg,rgba(0,0,0,.35),rgba(0,0,0,.08)),url('${esc(url)}')"` : ""; return `<div class="${className} dynamic-art${url ? " has-image" : ""}"${style} role="img" aria-label="${esc(c?.artist || "Concierto")}">${extra}</div>`; }
  
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) }; if (token()) headers.Authorization = `Bearer ${token()}`;
@@ -45,8 +45,47 @@ function filteredConcerts() {
   const now = new Date(), monthStart = new Date(now.getFullYear(), now.getMonth(), 1), monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59), three = new Date(now); three.setMonth(three.getMonth() + 3); const q = state.filters.search.toLocaleLowerCase("es").trim();
   return CONCERTS.filter(c => { const d = new Date(`${c.event_date}T12:00:00`); return (!state.filters.city || c.venue.city === state.filters.city) && (!state.filters.genres.length || state.filters.genres.includes(c.genre)) && (!q || [c.artist, c.tour_name, c.genre, c.venue.name, c.venue.city].some(v => String(v || "").toLocaleLowerCase("es").includes(q))) && (state.filters.date === "month" ? d >= monthStart && d <= monthEnd : state.filters.date === "three_months" ? d >= now && d <= three : true); }).sort((a, b) => state.filters.sort === "price_asc" ? Number(a.price_from) - Number(b.price_from) : state.filters.sort === "price_desc" ? Number(b.price_from) - Number(a.price_from) : `${a.event_date}${a.event_time}`.localeCompare(`${b.event_date}${b.event_time}`));
 }
-function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getElementById("featured-grid").innerHTML = rows.length ? rows.map(c => `<article class="feature-card" data-open="${c.id}">${art(c, "feature-card__art")}<div class="feature-card__body"><p class="feature-card__title">${esc(c.artist)}</p><p class="feature-card__meta">${esc(c.venue.name)} — ${fmtDate(c.event_date)}</p></div></article>`).join("") : `<div class="empty-state collection-message"><p>No hay conciertos próximos disponibles.</p></div>`; }
-function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p><div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
+/* ===== Cuenta regresiva y estado de disponibilidad =====
+   Umbrales (ajustables): por tipo de boleto y por concierto completo. */
+const LOW_STOCK_TYPE = 50, LOW_STOCK_TOTAL = 100;
+const ICO_CLOCK = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+function daysUntil(c) { if (!c?.event_date) return null; const [y, m, d] = c.event_date.slice(0, 10).split("-").map(Number), n = new Date(); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5); }
+function countdownInfo(c) {
+  const n = daysUntil(c); if (n === null) return null;
+  if (n < 0) return { text: "Finalizado", cls: "cs--muted", past: true };
+  if (n === 0) return { text: "¡Es hoy!", cls: "cs--hot" };
+  if (n === 1) return { text: "Mañana", cls: "cs--hot" };
+  return { text: `Faltan ${n.toLocaleString("es-CO")} días`, cls: n <= 7 ? "cs--hot" : "" };
+}
+/* Total de boletos: del detalle (ticket_types) o, si el listado lo trae, de c.tickets_available. null = dato desconocido. */
+function totalStock(c) {
+  if (Array.isArray(c?.ticket_types) && c.ticket_types.length) return c.ticket_types.reduce((s, t) => s + Number(t.quantity_available || 0), 0);
+  const v = c?.tickets_available; return v === undefined || v === null || Number.isNaN(Number(v)) ? null : Number(v);
+}
+function stockInfo(c) {
+  if (countdownInfo(c)?.past) return null; const t = totalStock(c); if (t === null) return null;
+  if (t <= 0) return { text: "Agotado", cls: "cs--soldout", state: "soldout" };
+  if (t <= LOW_STOCK_TOTAL) return { text: "Últimos boletos", cls: "cs--low", state: "low" };
+  return null;
+}
+function typeStock(t) {
+  const q = Number(t?.quantity_available || 0);
+  if (q <= 0) return { text: "Agotado", cls: "is-out" };
+  if (q <= LOW_STOCK_TYPE) return { text: `¡Quedan solo ${q.toLocaleString("es-CO")}!`, cls: "is-low" };
+  return { text: `${q.toLocaleString("es-CO")} disponibles`, cls: "" };
+}
+function statusChips(c) {
+  const cd = countdownInfo(c), st = stockInfo(c); if (!cd && !st) return "";
+  return `<div class="cs-row">${st ? `<span class="cs cs--dot ${st.cls}">${st.text}</span>` : ""}${cd ? `<span class="cs ${cd.cls}">${cd.past ? "" : ICO_CLOCK}${cd.text}</span>` : ""}</div>`;
+}
+const soldClass = c => stockInfo(c)?.state === "soldout" ? " is-soldout" : "";
+function renderStatus(c) {
+  const box = document.getElementById("detail-status"); if (box) box.innerHTML = statusChips(c);
+  const btn = document.querySelector('[data-nav="checkout"]'), t = ticketType(), out = !t || Number(t.quantity_available) <= 0;
+  if (btn) { btn.disabled = out; btn.textContent = t && out ? "Agotado" : "Continuar"; }
+}
+function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getElementById("featured-grid").innerHTML = rows.length ? rows.map(c => `<article class="feature-card${soldClass(c)}" data-open="${c.id}">${art(c, "feature-card__art", statusChips(c))}<div class="feature-card__body"><p class="feature-card__title">${esc(c.artist)}</p><p class="feature-card__meta">${esc(c.venue.name)} — ${fmtDate(c.event_date)}</p></div></article>`).join("") : `<div class="empty-state collection-message"><p>No hay conciertos próximos disponibles.</p></div>`; }
+function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
  
 async function openConcert(id) {
   state.selectedConcertId = Number(id); state.selectedConcert = null; state.selectedTicketTypeId = null; state.qty = 1; goTo("detail"); document.querySelector(".detail-title").textContent = "Cargando concierto..."; document.querySelector(".detail-sub").textContent = ""; document.getElementById("ticket-options").innerHTML = "";
@@ -55,7 +94,7 @@ async function openConcert(id) {
 function renderDetail() {
   const c = concert(); if (!c) return; const poster = document.querySelector(".detail-poster"), url = imageUrl(c.image_url); poster.className = `detail-poster dynamic-art${url ? " has-image" : ""}`; poster.style.backgroundImage = url ? `linear-gradient(0deg,rgba(0,0,0,.62),transparent 60%),url("${url.replace(/"/g, "%22")}")` : ""; poster.querySelector(".poster__tag").textContent = c.artist; poster.querySelector(".poster__tag2").textContent = c.tour_name; document.querySelector(".detail-title").textContent = c.artist; document.querySelector(".detail-sub").textContent = `${c.tour_name} · ${c.genre}`;
   document.querySelector(".meta-info").innerHTML = `<p><span class="dot">•</span> ${fmtDate(c.event_date, true)} · ${fmtTime(c.event_time)}</p><p><span class="dot">•</span> ${esc(venue(c))}</p>${c.venue.address ? `<p><span class="dot">•</span> ${esc(c.venue.address)}</p>` : ""}<p><span class="dot">•</span> Capacidad: ${Number(c.venue.capacity || 0).toLocaleString("es-CO")} personas</p>`; document.querySelector(".detail-blurb").textContent = c.description || "Información adicional no disponible.";
-  document.getElementById("stage-zones").innerHTML = c.ticket_types.map((t, i) => `<div class="stage-zone" style="width:${Math.min(96, 42 + i * 18)}%">${esc(t.name)}</div>`).join(""); document.getElementById("ticket-options").innerHTML = c.ticket_types.length ? c.ticket_types.map(t => `<label class="ticket-option ${t.id === state.selectedTicketTypeId ? "is-selected" : ""} ${t.quantity_available < 1 ? "is-disabled" : ""}" data-ticket-type="${t.id}"><span class="ticket-option__left"><span class="radio-outer"><span class="radio-inner"></span></span><span>${esc(t.name)}<small>${Number(t.quantity_available).toLocaleString("es-CO")} disponibles</small></span></span><span class="ticket-option__price">${fmtCOP(t.price)}</span></label>`).join("") : `<p class="form-message is-error">No hay tipos de boleto disponibles.</p>`; document.getElementById("qty-val").textContent = state.qty; document.querySelector('[data-nav="checkout"]').disabled = !ticketType(); renderDemos(c);
+  document.getElementById("stage-zones").innerHTML = c.ticket_types.map((t, i) => `<div class="stage-zone" style="width:${Math.min(96, 42 + i * 18)}%">${esc(t.name)}</div>`).join(""); document.getElementById("ticket-options").innerHTML = c.ticket_types.length ? c.ticket_types.map(t => `<label class="ticket-option ${t.id === state.selectedTicketTypeId ? "is-selected" : ""} ${t.quantity_available < 1 ? "is-disabled" : ""}" data-ticket-type="${t.id}"><span class="ticket-option__left"><span class="radio-outer"><span class="radio-inner"></span></span><span>${esc(t.name)}<small class="${typeStock(t).cls}">${typeStock(t).text}</small></span></span><span class="ticket-option__price">${fmtCOP(t.price)}</span></label>`).join("") : `<p class="form-message is-error">No hay tipos de boleto disponibles.</p>`; document.getElementById("qty-val").textContent = state.qty; document.querySelector('[data-nav="checkout"]').disabled = !ticketType(); renderStatus(c); renderDemos(c);
 }
 function renderCheckout() {
   const c = concert(), t = ticketType(); if (!c || !t) return goTo("listing"); const subtotal = Number(t.price) * state.qty, fee = 6000 * state.qty, total = subtotal + fee, box = document.querySelector(".summary-card"); box.querySelector(".summary-art").outerHTML = art(c, "thumb summary-art"); box.querySelector(".summary-item__title").textContent = c.artist; box.querySelector(".summary-item__sub").textContent = c.tour_name; const meta = box.querySelectorAll(".summary-item__meta"); meta[0].textContent = `${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}`; meta[1].textContent = venue(c); const rows = box.querySelectorAll(".summary-rows div"); rows[0].querySelector("dd").textContent = t.name; document.getElementById("co-qty").textContent = state.qty; rows[2].querySelector("dd").textContent = fmtCOP(t.price); document.getElementById("co-subtotal").textContent = fmtCOP(subtotal); document.getElementById("co-service-fee").textContent = fmtCOP(fee); document.getElementById("co-total").textContent = fmtCOP(total); document.getElementById("pay-button-label").textContent = `Pagar ${fmtCOP(total)}`;
