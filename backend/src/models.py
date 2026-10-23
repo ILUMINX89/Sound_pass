@@ -3,6 +3,7 @@ from datetime import datetime, date, time
 from sqlalchemy import (
     String, Integer, Numeric, Text, Date, Time, DateTime, ForeignKey, CheckConstraint,
 )
+from sqlalchemy import UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -106,3 +107,45 @@ class OrderItem(Base):
     ticket_type: Mapped["TicketType"] = relationship(back_populates="order_items")
 
     __table_args__ = (CheckConstraint("quantity > 0", name="ck_order_items_quantity_positive"),)
+
+class IssuedTicket(Base):
+    __tablename__ = "issued_tickets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    order_item_id: Mapped[int] = mapped_column(
+        ForeignKey("order_items.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    sequence_number: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    public_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "public_code",
+            name="uq_issued_tickets_public_code",
+        ),
+        UniqueConstraint(
+            "order_item_id",
+            "sequence_number",
+            name="uq_issued_tickets_item_sequence",
+        ),
+        CheckConstraint(
+            "sequence_number > 0",
+            name="ck_issued_tickets_sequence_positive",
+        ),
+    )

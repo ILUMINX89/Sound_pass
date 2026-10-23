@@ -123,7 +123,133 @@ document.querySelectorAll(".payment-option").forEach(o => o.onclick = () => { do
 document.getElementById("login-form").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.currentTarget); try { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ email: f.get("email"), password: f.get("password") }) }); localStorage.setItem("soundpass_token", r.access_token); state.currentUser = await api("/auth/me"); renderAccount(); const next = state.pendingScreen; closeAuth(); if (next) goTo(next); } catch (err) { message("login-message", err.message); } };
 document.getElementById("register-form").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.currentTarget); try { await api("/auth/register", { method: "POST", body: JSON.stringify({ full_name: f.get("full_name"), email: f.get("email"), password: f.get("password") }) }); document.getElementById("login-email").value = f.get("email"); setAuthView("login"); message("login-message", "Cuenta creada. Ahora inicia sesión.", false); } catch (err) { message("register-message", err.message); } };
 document.getElementById("pay-button").onclick = async () => { if (!token()) return openAuth("checkout"); const b = document.getElementById("pay-button"), c = concert(), t = ticketType(), text = document.querySelector(".payment-option.is-selected").textContent, payment = text.includes("PSE") ? "pse" : text.includes("Nequi") ? "nequi" : "card"; b.disabled = true; document.getElementById("pay-button-label").textContent = "Procesando compra…"; try { state.lastOrder = await api("/orders", { method: "POST", body: JSON.stringify({ concert_id: c.id, payment_method: payment, items: [{ ticket_type_id: t.id, quantity: state.qty }] }) }); renderSuccess(); goTo("success"); } catch (err) { alert(err.message); } finally { b.disabled = false; renderCheckout(); } };
-document.getElementById("download-receipt").onclick = () => { const o = state.lastOrder; if (!o) return; const lines = ["SoundPass — Comprobante de compra", `Orden: ${o.order_code}`, `Estado: ${o.status}`, `Concierto: ${o.concert.artist} — ${o.concert.tour_name}`, `Fecha: ${fmtDate(o.concert.event_date)} · ${fmtTime(o.concert.event_time)}`, `Recinto: ${venue(o.concert)}`, ...o.items.map(i => `${i.quantity} × ${i.ticket_type_name}: ${fmtCOP(Number(i.unit_price) * i.quantity)}`), `Subtotal: ${fmtCOP(o.subtotal)}`, `Cargo por servicio: ${fmtCOP(o.service_fee)}`, `Total: ${fmtCOP(o.total)}`]; const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" }), url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = `${o.order_code}.txt`; a.click(); URL.revokeObjectURL(url); };
+// HU-48: authenticated PDF ticket download.
+document.getElementById("download-receipt").onclick = async function () {
+  const button = this;
+  if (button.disabled) return;
+
+  const order = state.lastOrder;
+  const accessToken = token();
+
+  if (!order?.id) {
+    alert("No hay una orden disponible para descargar.");
+    return;
+  }
+
+  if (!accessToken) {
+    alert("Inicia sesión para descargar tus boletas.");
+    openAuth();
+    return;
+  }
+
+  if (order.status !== "confirmed") {
+    alert("Solo puedes descargar boletas de órdenes confirmadas.");
+    return;
+  }
+
+  const originalContent = button.innerHTML;
+  const originalDisabled = button.disabled;
+  const originalBusy = button.getAttribute("aria-busy");
+
+  button.disabled = true;
+  button.textContent = "Descargando...";
+  button.setAttribute("aria-busy", "true");
+
+  let objectUrl = null;
+
+  try {
+    let response;
+
+    try {
+      response = await fetch(
+        `${API_URL}/orders/${encodeURIComponent(order.id)}/tickets/pdf`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/pdf",
+          },
+          cache: "no-store",
+        }
+      );
+    } catch {
+      throw new Error(
+        "No fue posible conectar con el servidor. Intenta nuevamente."
+      );
+    }
+
+    if (!response.ok) {
+      const messages = {
+        401: "Tu sesión venció. Inicia sesión nuevamente.",
+        403: "No tienes permiso para descargar estas boletas.",
+        404: "La orden no está disponible o no pertenece a tu cuenta.",
+        409: "La orden no permite descargar boletas. Puede estar cancelada.",
+      };
+
+      let errorMessage = messages[response.status];
+
+      if (!errorMessage && response.status >= 500) {
+        errorMessage =
+          "No fue posible generar las boletas. Intenta más tarde.";
+      }
+
+      if (!errorMessage) {
+        const data = await response.json().catch(() => null);
+        errorMessage =
+          typeof data?.detail === "string"
+            ? data.detail
+            : "No fue posible descargar las boletas.";
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const contentType = (
+      response.headers.get("Content-Type") || ""
+    ).split(";")[0].trim().toLowerCase();
+
+    if (contentType !== "application/pdf") {
+      throw new Error("El servidor no devolvió un archivo PDF.");
+    }
+
+    const blob = await response.blob();
+
+    if (!blob.size || (await blob.slice(0, 5).text()) !== "%PDF-") {
+      throw new Error("El archivo recibido no es un PDF válido.");
+    }
+
+    objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `soundpass-orden-${order.id}.pdf`;
+    link.hidden = true;
+
+    document.body.appendChild(link);
+    try {
+      link.click();
+    } finally {
+      link.remove();
+    }
+  } catch (error) {
+    alert(error.message || "No fue posible descargar las boletas.");
+  } finally {
+    // Dar tiempo al navegador para iniciar la descarga.
+    if (objectUrl) {
+      const urlToRelease = objectUrl;
+      setTimeout(() => URL.revokeObjectURL(urlToRelease), 60000);
+    }
+
+    button.innerHTML = originalContent;
+    button.disabled = originalDisabled;
+
+    if (originalBusy === null) {
+      button.removeAttribute("aria-busy");
+    } else {
+      button.setAttribute("aria-busy", originalBusy);
+    }
+  }
+};
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => { document.querySelectorAll(".tab").forEach(x => x.classList.remove("is-active")); t.classList.add("is-active"); state.activeTicketTab = t.dataset.tab; renderTickets(); }); document.getElementById("modal-close").onclick = document.getElementById("modal-cancel").onclick = () => { document.getElementById("cancel-modal").hidden = true; state.orderToCancel = null; }; document.getElementById("modal-confirm").onclick = confirmCancellation;
 /* ===== HU-03: Detalle de orden de compra ===== */
 const PAYMENT_LABELS = { card: "Tarjeta de crédito / débito", pse: "PSE", nequi: "Nequi / Daviplata" };
