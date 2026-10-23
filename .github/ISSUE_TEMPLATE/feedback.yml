@@ -1,0 +1,55 @@
+name: Feedback de usuario externo
+description: Para personas fuera del equipo que probaron la app.
+title: "Feedback: "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por probar SoundPass. Cuéntanos con sinceridad qué te pareció; todo sirve para mejorarla.
+
+  - type: input
+    id: perfil
+    attributes:
+      label: ¿Quién eres?
+      description: "Por ejemplo: estudiante de otra carrera, persona que compra boletas seguido, desarrollador."
+    validations:
+      required: true
+
+  - type: textarea
+    id: probado
+    attributes:
+      label: ¿Qué intentaste hacer?
+      placeholder: "Registrarme, buscar un concierto en Medellín y comprar 2 boletas."
+    validations:
+      required: true
+
+  - type: textarea
+    id: bien
+    attributes:
+      label: ¿Qué funcionó bien?
+
+  - type: textarea
+    id: mal
+    attributes:
+      label: ¿Qué no funcionó, qué te confundió o qué echaste de menos?
+    validations:
+      required: true
+
+  - type: textarea
+    id: ideas
+    attributes:
+      label: Ideas para mejorar
+
+  - type: dropdown
+    id: calificacion
+    attributes:
+      label: Calificación general
+      options:
+        - "5 - Excelente"
+        - "4 - Buena"
+        - "3 - Regular"
+        - "2 - Mala"
+        - "1 - Muy mala"
+    validations:
+      required: true
