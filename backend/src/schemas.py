@@ -154,6 +154,19 @@ class VenueCreate(BaseModel):
     address: str | None = None
     capacity: int | None = None
 
+# ============================================================
+# Wikipedia — biografía del artista
+# ============================================================
+class ArtistBioOut(BaseModel):
+    concert_id: int
+    artist: str
+    status: Literal["ok", "not_found", "ambiguous", "unavailable"]
+    biography: str | None = Field(default=None, max_length=600)
+    article_title: str | None = None
+    article_url: str | None = None
+    source: Literal["Wikipedia"] = "Wikipedia"
+
+
 
 # ============================================================
 # Spotify — reproductor del artista
