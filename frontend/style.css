@@ -1441,49 +1441,6 @@ input, select { font-family: inherit; }
 }
  
 /* ============================================================
-   GALERÍA DEL ARTISTA (Spotify)
-   Prefijo ga- para no chocar con otros selectores
-   ============================================================ */
-.ga { margin-top: 44px; }
-.ga[hidden] { display: none; }
-.ga-head { margin-bottom: 20px; }
-.ga-head h2 { font-size: 24px; display: flex; align-items: center; gap: 12px; }
-.ga-head h2::before { content: ""; width: 5px; height: 24px; border-radius: 3px; background: var(--grad); }
-.ga-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 28px; padding: 20px; box-shadow: var(--shadow-card); }
-.ga-stage { display: flex; justify-content: center; align-items: center; min-height: 160px; border-radius: 18px; background: #121212; overflow: hidden; }
-.ga-main { display: block; width: auto; max-width: 100%; height: auto; max-height: min(560px, 70vh); object-fit: contain; }
-.ga-broken { margin: 0; padding: 40px 16px; font-size: 14px; color: var(--text-faint); text-align: center; }
-.ga-thumbs { list-style: none; margin: 14px 0 0; padding: 4px; display: flex; gap: 10px; overflow-x: auto; }
-.ga-thumb-item { flex: 0 0 auto; }
-.ga-thumb { display: block; width: 72px; height: 72px; padding: 0; border: 2px solid var(--border-soft); border-radius: 12px; background: #121212; overflow: hidden; cursor: pointer; opacity: .75; transition: opacity .15s ease, border-color .15s ease; }
-.ga-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.ga-thumb:hover { opacity: 1; border-color: var(--wine-500); }
-.ga-thumb.is-selected { opacity: 1; border-color: var(--wine-400); }
-.ga-thumb:focus-visible, .ga-retry:focus-visible { outline: 2px solid var(--wine-400); outline-offset: 3px; }
-.ga-source { margin: 12px 0 0; font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
- 
-/* Cargando (solo al reintentar) */
-.ga-card.is-loading .ga-status { margin: 12px 0 0; font-size: 13px; color: var(--text-faint); }
-.ga-skel { height: 220px; border-radius: 16px; background: linear-gradient(90deg, #1d1016 0%, #2a1620 50%, #1d1016 100%); background-size: 200% 100%; animation: dm-shimmer 1.4s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .ga-skel { animation: none; } .ga-thumb { transition: none; } }
- 
-/* Error recuperable */
-.ga-card.is-notice { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 20px; background: var(--amber-bg); border: 1px dashed rgba(255, 196, 107, .35); }
-.ga-card.is-notice .ga-status { margin: 0; flex: 1 1 240px; font-size: 14px; line-height: 1.5; color: var(--text-dim); }
-.ga-retry { flex-shrink: 0; min-height: 44px; background: rgba(255, 255, 255, .04); color: var(--text); border: 1px solid var(--border); box-shadow: none; }
-.ga-retry:hover:not(:disabled) { background: rgba(240, 73, 106, .12); border-color: var(--wine-500); }
-.ga-retry:disabled { opacity: .55; cursor: not-allowed; }
- 
-@media (max-width: 640px) {
-  .ga { margin-top: 36px; }
-  .ga-head h2 { font-size: 21px; }
-  .ga-card { border-radius: 22px; padding: 12px; }
-  .ga-card.is-notice { padding: 16px; }
-  .ga-thumb { width: 64px; height: 64px; }
-  .ga-retry { width: 100%; }
-}
- 
-/* ============================================================
    PRÓXIMOS CONCIERTOS DEL ARTISTA (Ticketmaster, informativo)
    Prefijo ue- para no chocar con otros selectores
    ============================================================ */

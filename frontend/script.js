@@ -31,7 +31,6 @@ function goTo(id) {
   if (id !== "detail" && typeof spotifyView !== "undefined" && spotifyView) spotifyClear();
   if (id !== "detail" && typeof artistBioView !== "undefined" && artistBioView) artistBioClear();
   if (id !== "detail" && typeof upcomingView !== "undefined" && upcomingView) upcomingClear();
-  if (id !== "detail" && typeof galleryView !== "undefined" && galleryView) galleryClear();
   document.querySelectorAll("[data-screen]").forEach(el => el.classList.toggle("is-active", el.id === `screen-${id}`));
   document.querySelectorAll(".primary-nav__link[data-active-on]").forEach(el => el.classList.toggle("is-active", el.dataset.activeOn.split(",").includes(id)));
   if (id === "checkout") renderCheckout(); if (id === "mytickets") loadTickets(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -91,7 +90,7 @@ function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getEleme
 function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
  
 async function openConcert(id) {
-  spotifyClear(); loadUpcomingEvents(Number(id)); loadArtistGallery(Number(id)); loadArtistBio(Number(id)); // la biografía va por su cuenta: si Wikipedia falla, el detalle y la compra siguen igual
+  spotifyClear(); loadUpcomingEvents(Number(id)); loadArtistBio(Number(id)); // la biografía va por su cuenta: si Wikipedia falla, el detalle y la compra siguen igual
   state.selectedConcertId = Number(id); state.selectedConcert = null; state.selectedTicketTypeId = null; state.qty = 1; goTo("detail"); document.querySelector(".detail-title").textContent = "Cargando concierto..."; document.querySelector(".detail-sub").textContent = ""; document.getElementById("ticket-options").innerHTML = "";
   try { const c = await api(`/concerts/${id}`); state.selectedConcert = c; state.selectedTicketTypeId = (c.ticket_types.find(t => t.quantity_available > 0) || c.ticket_types[0])?.id ?? null; renderDetail(); } catch (error) { document.querySelector(".detail-title").textContent = "No fue posible cargar el concierto"; document.querySelector(".detail-sub").textContent = error.message; }
 }
@@ -456,100 +455,3 @@ async function loadUpcomingEvents(id) {
   }
 }
  
-/* ===== Galería del artista (Spotify) =====
-   GET /concerts/{id}/artist-gallery  (misma base y mismo api() que el resto)
-   -> { concert_id, source: "spotify", status: "ok"|"not_found"|"ambiguous"|"no_images", artist?: { id, name, spotify_url }, images: [{ url, width, height }], message? }
-   La sección solo aparece con status "ok" y al menos una imagen válida. not_found / ambiguous / no_images / 404 la dejan oculta
-   (no bloquean el detalle). Un fallo HTTP o de red muestra un aviso con "Reintentar" solo en esta sección, sin tocar la compra.
-   Las "imágenes" suelen ser la MISMA foto en varios tamaños: se agrupan por foto y se muestra una miniatura por foto
-   (la versión grande se usa al ampliar). Si todo es una sola foto, se muestra solo la imagen ampliada.
-   Solo se aceptan URLs https de los hosts de imágenes de Spotify; las imágenes se crean con DOM (src/alt), nunca con innerHTML. */
-var galleryView = { concertId: null, req: 0, controller: null, loading: false, photos: [], selected: 0, name: "" };
-const galleryRoot = () => document.getElementById("artist-gallery");
-const galleryBody = () => document.getElementById("artist-gallery-body");
-const GALLERY_MSG = { error: "No se pudo cargar la galería del artista.", unavailable: "La galería del artista no está disponible en este momento.", image: "No se pudo cargar esta imagen." };
-const GALLERY_MAX_PHOTOS = 12;
-function galleryClear() {
-  galleryView.req++; galleryView.controller?.abort(); galleryView.controller = null; galleryView.concertId = null; galleryView.loading = false; galleryView.photos = []; galleryView.selected = 0; galleryView.name = "";
-  const body = galleryBody(), root = galleryRoot(); if (body) { body.replaceChildren(); body.setAttribute("aria-busy", "false"); body.className = "ga-card"; } if (root) root.hidden = true;
-}
-function galleryNode(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text !== undefined) el.textContent = text; return el; }
-/* https + hosts de imágenes de Spotify (i.scdn.co, mosaic.scdn.co, *.spotifycdn.com) */
-function galleryImageUrl(value) {
-  if (typeof value !== "string") return null;
-  try { const u = new URL(value.trim()); return u.protocol === "https:" && !u.username && !u.password && (/(^|\.)scdn\.co$/i.test(u.hostname) || /(^|\.)spotifycdn\.com$/i.test(u.hostname)) ? u.href : null; } catch { return null; }
-}
-const galleryDim = v => Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : 0;
-/* Spotify: ab67616100005174<hash> / ab6761610000e5eb<hash> / ab6761610000f178<hash> -> mismo <hash> = misma fotografía en otro tamaño */
-function galleryPhotoKey(url) { const m = new URL(url).pathname.match(/\/image\/[0-9a-f]{16}([0-9a-f]{24,})$/i); return m ? `photo:${m[1].toLowerCase()}` : `url:${url}`; }
-function galleryPhotos(images) {
-  const groups = new Map();
-  (Array.isArray(images) ? images : []).forEach(img => {
-    const url = galleryImageUrl(img?.url); if (!url) return;
-    const item = { url, w: galleryDim(img.width), h: galleryDim(img.height) }, key = galleryPhotoKey(url);
-    (groups.get(key) || groups.set(key, []).get(key)).push(item);
-  });
-  return [...groups.values()].slice(0, GALLERY_MAX_PHOTOS).map(list => {
-    const area = i => i.w * i.h, sorted = [...list].sort((a, b) => area(b) - area(a)), full = sorted[0], known = sorted.filter(i => area(i) > 0), thumb = known.length ? known[known.length - 1] : full;
-    return { full, thumb };
-  });
-}
-function gallerySelect(index) {
-  const body = galleryBody(), photo = galleryView.photos[index]; if (!body || !photo) return;
-  galleryView.selected = index;
-  const stage = body.querySelector(".ga-stage"), img = galleryNode("img", "ga-main"); img.alt = galleryAlt(index); img.src = photo.full.url; img.decoding = "async"; img.referrerPolicy = "no-referrer";
-  if (photo.full.w && photo.full.h) { img.width = photo.full.w; img.height = photo.full.h; }
-  img.onerror = () => { stage.replaceChildren(galleryNode("p", "ga-broken", GALLERY_MSG.image)); };
-  stage.replaceChildren(img);
-  body.querySelectorAll(".ga-thumb").forEach((b, i) => { b.setAttribute("aria-pressed", String(i === index)); b.classList.toggle("is-selected", i === index); });
-}
-function galleryAlt(index) { const n = galleryView.photos.length; return n > 1 ? `Foto ${index + 1} de ${n} de ${galleryView.name}` : `Foto de ${galleryView.name}`; }
-function renderGallery(kind, opts = {}) {
-  const body = galleryBody(), root = galleryRoot(); if (!body || !root) return;
-  body.replaceChildren(); body.className = "ga-card"; body.setAttribute("aria-busy", "false"); root.hidden = false;
-  if (kind === "notice") {
-    body.classList.add("is-notice"); body.append(galleryNode("p", "ga-status", opts.text));
-    const b = galleryNode("button", "btn btn--sm ga-retry", "Reintentar"); b.type = "button"; b.dataset.galleryRetry = ""; body.append(b); return;
-  }
-  const photos = galleryView.photos, stage = galleryNode("div", "ga-stage"); body.append(stage);
-  if (photos.length > 1) {
-    const list = galleryNode("ul", "ga-thumbs"); list.setAttribute("aria-label", "Miniaturas de la galería");
-    photos.forEach((p, i) => {
-      const li = galleryNode("li", "ga-thumb-item"), b = galleryNode("button", "ga-thumb"), t = galleryNode("img"); b.type = "button"; b.dataset.galleryIndex = String(i); b.setAttribute("aria-label", `Ver foto ${i + 1} de ${photos.length}`); b.setAttribute("aria-pressed", "false");
-      t.src = p.thumb.url; t.alt = ""; t.loading = "lazy"; t.decoding = "async"; t.referrerPolicy = "no-referrer"; t.onerror = () => { li.remove(); }; b.append(t); li.append(b); list.append(li);
-    });
-    body.append(list);
-  }
-  body.append(galleryNode("p", "ga-source", "Fuente: Spotify"));
-  gallerySelect(0);
-}
-async function loadArtistGallery(id, force = false) {
-  const root = galleryRoot(); if (!root || !Number.isInteger(id) || id <= 0) return;
-  if (!force && galleryView.concertId === id) return; // ya cargada o en curso: sin peticiones duplicadas
-  if (force && galleryView.loading) return;
-  galleryClear(); galleryView.concertId = id; galleryView.loading = true;
-  const req = galleryView.req, controller = galleryView.controller = new AbortController(), current = () => req === galleryView.req && state.selectedConcertId === id;
-  if (force) { root.hidden = false; const body = galleryBody(); body.className = "ga-card is-loading"; body.setAttribute("aria-busy", "true"); body.append(galleryNode("div", "ga-skel"), galleryNode("p", "ga-status", "Cargando galería…")); } // carga visible solo al reintentar
-  try {
-    const data = await api(`/concerts/${id}/artist-gallery`, { signal: controller.signal });
-    if (!current()) return; // respuesta tardía de otro concierto: se descarta
-    galleryView.loading = false;
-    if (!data || typeof data !== "object" || Number(data.concert_id) !== id) return renderGallery("notice", { text: GALLERY_MSG.error });
-    if (data.status === "not_found" || data.status === "ambiguous" || data.status === "no_images") return galleryClear2(id); // sin galería: la sección no se muestra
-    if (data.status !== "ok") return renderGallery("notice", { text: GALLERY_MSG.error });
-    const photos = galleryPhotos(data.images); if (!photos.length) return galleryClear2(id);
-    galleryView.photos = photos; galleryView.selected = 0; galleryView.name = typeof data.artist?.name === "string" && data.artist.name.trim() ? data.artist.name.trim() : concert()?.artist || "el artista";
-    renderGallery("gallery");
-  } catch (error) {
-    if (error?.name === "AbortError" || !current()) return; // cancelar no es un error
-    galleryView.loading = false;
-    if (error.status === 404) return galleryClear2(id); // el aviso "No se encontró el concierto." ya lo da la biografía
-    renderGallery("notice", { text: error.status === 502 || error.status === 503 ? GALLERY_MSG.unavailable : GALLERY_MSG.error });
-  }
-}
-/* Deja la sección oculta pero recuerda el concierto para no volver a consultar al repintar el detalle */
-function galleryClear2(id) { const body = galleryBody(), root = galleryRoot(); if (body) { body.replaceChildren(); body.className = "ga-card"; body.setAttribute("aria-busy", "false"); } if (root) root.hidden = true; galleryView.concertId = id; galleryView.loading = false; }
-document.addEventListener("click", e => {
-  const t = e.target.closest("[data-gallery-index]"); if (t) return gallerySelect(Number(t.dataset.galleryIndex));
-  const r = e.target.closest("[data-gallery-retry]"); if (r && !r.disabled) { r.disabled = true; loadArtistGallery(state.selectedConcertId, true); }
-});
