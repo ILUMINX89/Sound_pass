@@ -45,6 +45,27 @@ Actividad de la asignatura **Desarrollo de aplicaciones en la nube**, Fundación
 | **Frontend Developer / QA** | Sergio Arias | [@Sergioa-aR](https://github.com/Sergioa-aR) |
 | **DevOps Engineer** | Camilo Montenegro | [@imaakro](https://github.com/imaakro) |
 
+### Responsabilidades de cada integrante
+
+La distribución conserva los roles definidos en el README anterior y concreta sus responsabilidades según las funcionalidades y tareas documentadas en el proyecto.
+
+| Integrante | Rol | Responsabilidades |
+|---|---|---|
+| **Esteban Parra — @ILUMINX89** | **Product Owner** | Definir el alcance funcional, organizar y priorizar las historias de usuario, coordinar las entregas y comprobar que los criterios de aceptación correspondan a las necesidades del proyecto. |
+| **Esteban Parra — @ILUMINX89** | **Backend Developer** | Desarrollar y mantener la API FastAPI, los modelos y contratos de datos, la autenticación y las operaciones de conciertos y órdenes. Integrar Spotify, Wikipedia y Ticketmaster; implementar la emisión de boletas PDF con QR y sus migraciones. Documentar los endpoints e informar las variables y dependencias necesarias para desplegarlos. |
+| **Sergio Arias — @Sergioa-aR** | **Frontend Developer / QA** | Desarrollar las pantallas en HTML, CSS y JavaScript, mantener el diseño responsive y conectar la interfaz con la API. Presentar el catálogo, los detalles de conciertos y órdenes, el reproductor, las biografías, los próximos eventos y la galería. Verificar navegación, formularios, estados de carga y error, y los flujos de compra y gestión de boletas; registrar los fallos encontrados. |
+| **Camilo Montenegro — @imaakro** | **DevOps Engineer** | Mantener Docker y Docker Compose, la infraestructura de Azure, nginx y los workflows de CI/CD. Gestionar la configuración del despliegue y sus secretos, verificar la ejecución de los checks y la disponibilidad posterior al despliegue. Mantener las automatizaciones de GitHub Projects, las plantillas de issues, la revisión del formato de commits y la documentación del proceso de contribución. |
+
+### Responsabilidades compartidas
+
+- Registrar el trabajo mediante issues y mantener actualizados sus datos y evidencias en el tablero.
+- Crear las ramas desde `development`, usar commits con el formato acordado y abrir PRs vinculados a su historia.
+- Revisar los cambios de otro integrante en **Files changed**, dejar un comentario y aprobar cuando corresponda antes del merge. Ningún integrante debe mergear su propio PR.
+- Comprobar los criterios de aceptación, documentar las validaciones realizadas y reportar los pendientes de integración o despliegue.
+- Mantener las credenciales reales fuera del repositorio y coordinar los cambios de configuración que necesite la VM.
+
+Los roles indican la responsabilidad principal de cada integrante; las contribuciones puntuales a otras capas quedan reflejadas en los issues y PRs. Por ejemplo, la conexión del botón de descarga al PDF fue aportada por Esteban en el PR #49.
+
 ---
 
 ## Descripción del Proyecto
