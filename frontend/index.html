@@ -28,7 +28,7 @@
  
       <nav class="primary-nav" aria-label="Navegación principal">
         <button class="primary-nav__link" data-nav="listing" data-active-on="listing">Conciertos</button>
-        <button class="primary-nav__link" data-nav="mytickets" data-active-on="mytickets,cancelled">Mis boletos</button>
+        <button class="primary-nav__link" data-nav="mytickets" data-active-on="mytickets,cancelled,orderdetail">Mis boletos</button>
         <button class="primary-nav__link" data-nav="help" data-active-on="help">Ayuda</button>
       </nav>
  
@@ -337,6 +337,19 @@
       </div>
  
       <div class="ticket-list" id="ticket-list"></div>
+    </section>
+ 
+    <!-- ============ 6b. DETALLE DE ORDEN (HU-03) ============ -->
+    <section class="screen" id="screen-orderdetail" data-screen>
+      <button class="back-link" id="order-detail-back" data-nav="mytickets">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        Volver a Mis boletos
+      </button>
+ 
+      <div id="order-detail"></div>
     </section>
  
     <!-- ============ HELP / PREGUNTAS FRECUENTES ============ -->
