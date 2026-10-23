@@ -25,10 +25,10 @@ function art(c, className = "", extra = "") { const url = imageUrl(c?.image_url)
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) }; if (token()) headers.Authorization = `Bearer ${token()}`;
   let response; try { response = await fetch(API_URL + path, { ...options, headers }); } catch { throw new Error("No fue posible conectar con la API. Verifica que el backend esté activo."); }
-  const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.detail || "No fue posible completar la solicitud."); return data;
+  const data = await response.json().catch(() => ({})); if (!response.ok) { const d = data.detail; throw new Error(typeof d === "string" && d ? d : typeof d?.message === "string" && d.message ? d.message : "No fue posible completar la solicitud."); } return data;
 }
 function goTo(id) {
-  if (id !== "detail" && typeof demoState !== "undefined" && demoState) { demoStop(); demoRoot()?.classList.remove("is-playing"); }
+  if (id !== "detail" && typeof spotifyView !== "undefined" && spotifyView) spotifyClear();
   document.querySelectorAll("[data-screen]").forEach(el => el.classList.toggle("is-active", el.id === `screen-${id}`));
   document.querySelectorAll(".primary-nav__link[data-active-on]").forEach(el => el.classList.toggle("is-active", el.dataset.activeOn.split(",").includes(id)));
   if (id === "checkout") renderCheckout(); if (id === "mytickets") loadTickets(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -88,13 +88,14 @@ function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getEleme
 function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
  
 async function openConcert(id) {
+  spotifyClear();
   state.selectedConcertId = Number(id); state.selectedConcert = null; state.selectedTicketTypeId = null; state.qty = 1; goTo("detail"); document.querySelector(".detail-title").textContent = "Cargando concierto..."; document.querySelector(".detail-sub").textContent = ""; document.getElementById("ticket-options").innerHTML = "";
   try { const c = await api(`/concerts/${id}`); state.selectedConcert = c; state.selectedTicketTypeId = (c.ticket_types.find(t => t.quantity_available > 0) || c.ticket_types[0])?.id ?? null; renderDetail(); } catch (error) { document.querySelector(".detail-title").textContent = "No fue posible cargar el concierto"; document.querySelector(".detail-sub").textContent = error.message; }
 }
 function renderDetail() {
   const c = concert(); if (!c) return; const poster = document.querySelector(".detail-poster"), url = imageUrl(c.image_url); poster.className = `detail-poster dynamic-art${url ? " has-image" : ""}`; poster.style.backgroundImage = url ? `linear-gradient(0deg,rgba(0,0,0,.62),transparent 60%),url("${url.replace(/"/g, "%22")}")` : ""; poster.querySelector(".poster__tag").textContent = c.artist; poster.querySelector(".poster__tag2").textContent = c.tour_name; document.querySelector(".detail-title").textContent = c.artist; document.querySelector(".detail-sub").textContent = `${c.tour_name} · ${c.genre}`;
   document.querySelector(".meta-info").innerHTML = `<p><span class="dot">•</span> ${fmtDate(c.event_date, true)} · ${fmtTime(c.event_time)}</p><p><span class="dot">•</span> ${esc(venue(c))}</p>${c.venue.address ? `<p><span class="dot">•</span> ${esc(c.venue.address)}</p>` : ""}<p><span class="dot">•</span> Capacidad: ${Number(c.venue.capacity || 0).toLocaleString("es-CO")} personas</p>`; document.querySelector(".detail-blurb").textContent = c.description || "Información adicional no disponible.";
-  document.getElementById("stage-zones").innerHTML = c.ticket_types.map((t, i) => `<div class="stage-zone" style="width:${Math.min(96, 42 + i * 18)}%">${esc(t.name)}</div>`).join(""); document.getElementById("ticket-options").innerHTML = c.ticket_types.length ? c.ticket_types.map(t => `<label class="ticket-option ${t.id === state.selectedTicketTypeId ? "is-selected" : ""} ${t.quantity_available < 1 ? "is-disabled" : ""}" data-ticket-type="${t.id}"><span class="ticket-option__left"><span class="radio-outer"><span class="radio-inner"></span></span><span>${esc(t.name)}<small class="${typeStock(t).cls}">${typeStock(t).text}</small></span></span><span class="ticket-option__price">${fmtCOP(t.price)}</span></label>`).join("") : `<p class="form-message is-error">No hay tipos de boleto disponibles.</p>`; document.getElementById("qty-val").textContent = state.qty; document.querySelector('[data-nav="checkout"]').disabled = !ticketType(); renderStatus(c); renderDemos(c);
+  document.getElementById("stage-zones").innerHTML = c.ticket_types.map((t, i) => `<div class="stage-zone" style="width:${Math.min(96, 42 + i * 18)}%">${esc(t.name)}</div>`).join(""); document.getElementById("ticket-options").innerHTML = c.ticket_types.length ? c.ticket_types.map(t => `<label class="ticket-option ${t.id === state.selectedTicketTypeId ? "is-selected" : ""} ${t.quantity_available < 1 ? "is-disabled" : ""}" data-ticket-type="${t.id}"><span class="ticket-option__left"><span class="radio-outer"><span class="radio-inner"></span></span><span>${esc(t.name)}<small class="${typeStock(t).cls}">${typeStock(t).text}</small></span></span><span class="ticket-option__price">${fmtCOP(t.price)}</span></label>`).join("") : `<p class="form-message is-error">No hay tipos de boleto disponibles.</p>`; document.getElementById("qty-val").textContent = state.qty; document.querySelector('[data-nav="checkout"]').disabled = !ticketType(); renderStatus(c); loadSpotify(c);
 }
 function renderCheckout() {
   const c = concert(), t = ticketType(); if (!c || !t) return goTo("listing"); const subtotal = Number(t.price) * state.qty, fee = 6000 * state.qty, total = subtotal + fee, box = document.querySelector(".summary-card"); box.querySelector(".summary-art").outerHTML = art(c, "thumb summary-art"); box.querySelector(".summary-item__title").textContent = c.artist; box.querySelector(".summary-item__sub").textContent = c.tour_name; const meta = box.querySelectorAll(".summary-item__meta"); meta[0].textContent = `${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}`; meta[1].textContent = venue(c); const rows = box.querySelectorAll(".summary-rows div"); rows[0].querySelector("dd").textContent = t.name; document.getElementById("co-qty").textContent = state.qty; rows[2].querySelector("dd").textContent = fmtCOP(t.price); document.getElementById("co-subtotal").textContent = fmtCOP(subtotal); document.getElementById("co-service-fee").textContent = fmtCOP(fee); document.getElementById("co-total").textContent = fmtCOP(total); document.getElementById("pay-button-label").textContent = `Pagar ${fmtCOP(total)}`;
@@ -150,124 +151,46 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-orde
  
 async function init() { goTo("home"); await restoreSession(); try { await loadConcerts(); } catch (error) { CONCERTS = []; collectionMessage("No fue posible cargar los conciertos."); console.error(error); } } init();
  
-/* ===== Demos del concierto (front) =====
-   Datos: c.demos = [{ id, title, duration_seconds, tag?, audio_url?, spotify_uri? }]
-   Mientras el backend no los envíe se usan DEMO_SAMPLE (borrar esa línea al conectar la API).
-   Reproducción: "providers" intercambiables. Hoy: <audio> si hay audio_url, o simulación visual.
-   Para Spotify solo hay que registrar otro provider en DEMO_PROVIDERS y devolverlo en pickProvider(). */
-const DEMO_SAMPLE = [
-  { id: 1, title: "Apertura del show", duration_seconds: 90 },
-  { id: 2, title: "Tema principal", duration_seconds: 75, tag: "estreno" },
-  { id: 3, title: "Versión acústica", duration_seconds: 65, tag: "acustica" },
-  { id: 4, title: "Invitado especial", duration_seconds: 80, tag: "colaboracion" },
-  { id: 5, title: "Tema de la gira", duration_seconds: 70 },
-  { id: 6, title: "Cierre del show", duration_seconds: 100 }
-];
-const DEMO_TAGS = { estreno: ["Estreno", ""], acustica: ["Acústica", "dm-tag--amber"], colaboracion: ["Colaboración", "dm-tag--green"] };
-const ICO_PLAY = `<svg class="ico-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-const ICO_PAUSE = `<svg class="ico-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>`;
-const ICO_PREV = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>`;
-const ICO_NEXT = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>`;
-var demoState = { list: [], index: 0, playing: false, time: 0, provider: null };
-const fmtClock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-const demoBars = (n, seed) => Array.from({ length: n }, (_, i) => `<i style="--h:${25 + Math.abs(Math.sin((i + 1) * (seed + 2) * 1.7)) * 75 | 0}%"></i>`).join("");
-const demoRoot = () => document.getElementById("concert-demos");
  
-/* --- Providers: { load(demo, onTick, onEnd, onError), play(), pause(), seek(sec), stop() } --- */
-const DEMO_PROVIDERS = {
-  audio() {
-    const a = new Audio(); a.preload = "none"; let tick, end, err;
-    a.ontimeupdate = () => tick?.(a.currentTime); a.onended = () => end?.(); a.onerror = () => err?.();
-    return {
-      load(d, t, e, r) { tick = t; end = e; err = r; a.src = d.audio_url || d.preview_url; },
-      play: () => a.play(), pause: () => a.pause(), seek: s => { a.currentTime = s; }, stop() { a.pause(); a.removeAttribute("src"); a.load(); }
-    };
-  },
-  simulated() { // sin audio: avanza el tiempo para poder ver el diseño funcionando
-    let t = 0, id = null, dur = 0, tick, end;
-    return {
-      load(d, tk, e) { this.stop(); dur = d.duration_seconds; tick = tk; end = e; t = 0; },
-      play() { clearInterval(id); id = setInterval(() => { t += .25; tick?.(t); if (t >= dur) { clearInterval(id); end?.(); } }, 250); return Promise.resolve(); },
-      pause() { clearInterval(id); }, seek(s) { t = s; tick?.(t); }, stop() { clearInterval(id); t = 0; }
-    };
+/* ===== Demos del concierto: reproductor oficial de Spotify =====
+   GET /concerts/{id}/spotify  (misma base de API que el resto: API_URL)
+   -> { status: "ok" | "not_found" | "ambiguous", message?, artist?: { name, embed_url, spotify_url } }
+   ok               -> iframe oficial + enlace "Abrir en Spotify"
+   not_found/ambig. -> solo el mensaje, sin reproductor
+   error HTTP/red   -> aviso con "Reintentar"; nunca bloquea el detalle ni la compra
+   El iframe se retira al salir del detalle y al cambiar de concierto. */
+var spotifyView = { concertId: null, req: 0, controller: null };
+const SPOTIFY_URL = /^https:\/\/open\.spotify\.com\//i;
+const spotifyRoot = () => document.getElementById("concert-demos");
+function spotifyClear() {
+  spotifyView.req++; spotifyView.controller?.abort(); spotifyView.controller = null; spotifyView.concertId = null;
+  const root = spotifyRoot(); if (!root) return;
+  root.querySelectorAll("iframe").forEach(f => { f.src = "about:blank"; f.remove(); });
+  root.innerHTML = "";
+}
+const spotifyHead = (name, extra = "") => `<div class="dm-head"><div><h2>Demos del concierto</h2><p class="dm-sub">Escucha a ${esc(name)} en Spotify antes del show.</p></div>${extra}</div>`;
+const spotifyNotice = (name, text, retry = false) => spotifyHead(name) + `<div class="dm-card dm-notice" role="status"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><p>${esc(text)}</p>${retry ? `<button class="btn btn--sm dm-retry" type="button" data-spotify-retry>Reintentar</button>` : ""}</div>`;
+async function loadSpotify(c, force = false) {
+  const root = spotifyRoot(); if (!root || !c) return;
+  if (!force && spotifyView.concertId === c.id) return; // renderDetail se repite al cambiar cantidad o zona: no recargar el iframe
+  spotifyClear(); spotifyView.concertId = c.id;
+  const req = spotifyView.req, controller = spotifyView.controller = new AbortController();
+  root.innerHTML = spotifyHead(c.artist) + `<div class="dm-card dm-loading" role="status" aria-live="polite"><div class="dm-skel"></div><p>Cargando reproductor de Spotify...</p></div>`;
+  try {
+    const data = await api(`/concerts/${c.id}/spotify`, { signal: controller.signal });
+    if (req !== spotifyView.req) return; // el usuario ya cambió de concierto o salió del detalle
+    const a = data?.artist || {}, name = a.name || c.artist;
+    if (data?.status === "ok" && SPOTIFY_URL.test(a.embed_url || "")) {
+      const link = SPOTIFY_URL.test(a.spotify_url || "") ? `<a class="btn btn--primary btn--sm dm-open" href="${esc(a.spotify_url)}" target="_blank" rel="noopener noreferrer">Abrir en Spotify</a>` : "";
+      root.innerHTML = spotifyHead(name, link) + `<div class="dm-card dm-embed"><iframe src="${esc(a.embed_url)}" title="Reproductor de Spotify: ${esc(name)}" width="100%" height="352" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe></div>`;
+    } else if (data?.status === "not_found" || data?.status === "ambiguous") {
+      root.innerHTML = spotifyNotice(c.artist, data.message || "No pudimos encontrar a este artista en Spotify.");
+    } else {
+      root.innerHTML = spotifyNotice(c.artist, "No pudimos cargar el reproductor de Spotify. Puedes continuar con tu compra con normalidad.", true);
+    }
+  } catch (error) {
+    if (req !== spotifyView.req) return;
+    root.innerHTML = spotifyNotice(c.artist, "No pudimos cargar el reproductor de Spotify. Puedes continuar con tu compra con normalidad.", true);
   }
-};
-function pickProvider(d) { return (d.audio_url || d.preview_url) ? DEMO_PROVIDERS.audio() : DEMO_PROVIDERS.simulated(); }
- 
-function demoStop() { demoState.provider?.stop(); demoState.provider = null; demoState.playing = false; demoState.time = 0; }
-function renderDemos(c) {
-  const root = demoRoot(); if (!root) return;
-  demoStop();
-  const list = (Array.isArray(c?.demos) ? c.demos : DEMO_SAMPLE).filter(d => d && d.title);
-  demoState.list = list; demoState.index = 0; root.classList.remove("is-playing");
-  if (!list.length) { root.innerHTML = `<div class="empty-state dm-empty"><h3>Aún no hay demos</h3><p>Pronto podrás escuchar un adelanto de este concierto.</p></div>`; return; }
-  const total = list.reduce((s, d) => s + Number(d.duration_seconds || 0), 0);
-  const bg = imageUrl(c.image_url);
-  root.innerHTML = `
-    <div class="dm-head"><div><h2>Demos del concierto</h2><p class="dm-sub">Escucha un adelanto de las canciones que van a cantar.</p></div><span class="dm-count"><b>${list.length}</b> ${list.length === 1 ? "demo" : "demos"}</span></div>
-    <div class="dm-board">
-      <div class="dm-player">
-        <div class="dm-player__art dynamic-art${bg ? " has-image" : ""}"${bg ? ` style="background-image:url('${esc(bg)}')"` : ""}>
-          <span class="dm-badge" id="dm-badge"></span>
-          <button class="dm-play-lg" data-dm="toggle" aria-label="Reproducir o pausar">${ICO_PLAY}${ICO_PAUSE}</button>
-          <div class="dm-eq" aria-hidden="true">${demoBars(16, 3)}</div>
-        </div>
-        <div class="dm-player__body">
-          <p class="dm-now" id="dm-now"></p><p class="dm-now-sub">${esc(c.artist || "")} · ${esc(c.tour_name || "")}</p>
-          <div class="dm-progress"><span id="dm-cur">0:00</span><div class="dm-bar" id="dm-bar" role="slider" tabindex="0" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="dm-fill"></i></div><span id="dm-dur">0:00</span></div>
-          <div class="dm-controls">
-            <button class="dm-ico" data-dm="prev" aria-label="Anterior">${ICO_PREV}</button>
-            <button class="dm-ico dm-ico--main dm-main" data-dm="toggle" aria-label="Reproducir o pausar">${ICO_PLAY}${ICO_PAUSE}</button>
-            <button class="dm-ico" data-dm="next" aria-label="Siguiente">${ICO_NEXT}</button>
-          </div>
-          <p class="dm-status" id="dm-status" role="status"></p>
-        </div>
-      </div>
-      <div class="dm-list-wrap">
-        <div class="dm-list-head"><strong>Canciones del show</strong><span>${list.length} ${list.length === 1 ? "demo" : "demos"} · ${Math.max(1, Math.round(total / 60))} min</span></div>
-        <ul class="dm-list">${list.map((d, i) => { const t = DEMO_TAGS[d.tag]; return `<li class="dm-track" data-dm-track="${i}" tabindex="0"><span class="dm-num"><span class="dm-num__n">${i + 1}</span><span class="dm-num__eq" aria-hidden="true"><i></i><i></i><i></i></span></span><div class="dm-track__main"><p class="dm-track__title">${esc(d.title)}</p><div class="dm-track__meta">${t ? `<span class="dm-tag ${t[1]}">${t[0]}</span>` : ""}<span>Demo ${String(i + 1).padStart(2, "0")}</span></div></div><span class="dm-wave" aria-hidden="true">${demoBars(22, i)}</span><span class="dm-dur">${fmtClock(d.duration_seconds || 0)}</span><button class="dm-mini" data-dm-play="${i}" aria-label="Reproducir ${esc(d.title)}">${ICO_PLAY}${ICO_PAUSE}</button></li>`; }).join("")}</ul>
-        <p class="dm-note">Los demos son un adelanto. El orden final del show puede variar.</p>
-      </div>
-    </div>`;
-  demoSelect(0, false);
 }
-function demoUI() {
-  const root = demoRoot(), d = demoState.list[demoState.index]; if (!root || !d) return;
-  const dur = Number(d.duration_seconds || 0), pct = dur ? Math.min(100, demoState.time / dur * 100) : 0;
-  root.classList.toggle("is-playing", demoState.playing);
-  root.querySelectorAll(".dm-track").forEach((el, i) => { const cur = i === demoState.index; el.classList.toggle("is-current", cur); el.classList.toggle("is-playing", cur && demoState.playing); });
-  root.querySelector("#dm-now").textContent = d.title; root.querySelector("#dm-badge").textContent = `Demo ${String(demoState.index + 1).padStart(2, "0")} de ${demoState.list.length}`;
-  root.querySelector("#dm-cur").textContent = fmtClock(demoState.time); root.querySelector("#dm-dur").textContent = fmtClock(dur);
-  root.querySelector("#dm-fill").style.width = pct + "%"; root.querySelector("#dm-bar").setAttribute("aria-valuenow", Math.round(pct));
-}
-function demoSelect(i, autoplay = true) {
-  const d = demoState.list[i]; if (!d) return;
-  demoState.provider?.stop(); demoState.index = i; demoState.time = 0; demoState.playing = false; document.getElementById("dm-status").textContent = "";
-  const p = demoState.provider = pickProvider(d);
-  p.load(d, t => { demoState.time = t; demoUI(); }, () => { if (i < demoState.list.length - 1) demoSelect(i + 1, true); else { demoState.playing = false; demoState.time = 0; demoUI(); } }, () => { demoState.playing = false; document.getElementById("dm-status").textContent = "No pudimos reproducir este demo."; demoUI(); });
-  demoUI(); if (autoplay) demoToggle(true);
-}
-async function demoToggle(forcePlay) {
-  const p = demoState.provider; if (!p) return;
-  if (demoState.playing && !forcePlay) { p.pause(); demoState.playing = false; }
-  else { try { await p.play(); demoState.playing = true; } catch { demoState.playing = false; document.getElementById("dm-status").textContent = "No pudimos reproducir este demo."; } }
-  demoUI();
-}
-function demoSeek(clientX) {
-  const bar = document.getElementById("dm-bar"), d = demoState.list[demoState.index]; if (!bar || !d) return;
-  const r = bar.getBoundingClientRect(), s = Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * Number(d.duration_seconds || 0);
-  demoState.provider?.seek(s); demoState.time = s; demoUI();
-}
-document.addEventListener("click", e => {
-  const root = demoRoot(); if (!root || !root.contains(e.target)) return;
-  const btn = e.target.closest("[data-dm]"), mini = e.target.closest("[data-dm-play]"), row = e.target.closest("[data-dm-track]"), bar = e.target.closest("#dm-bar"), n = demoState.list.length;
-  if (bar) return demoSeek(e.clientX);
-  if (btn) { const a = btn.dataset.dm; if (a === "toggle") demoToggle(); else if (a === "next") demoSelect((demoState.index + 1) % n); else if (a === "prev") demoSelect(demoState.time > 3 ? demoState.index : (demoState.index - 1 + n) % n); return; }
-  const i = Number((mini || row)?.dataset.dmPlay ?? row?.dataset.dmTrack); if (Number.isNaN(i)) return;
-  i === demoState.index ? demoToggle() : demoSelect(i);
-});
-document.addEventListener("keydown", e => {
-  const row = e.target.closest?.("[data-dm-track]"); if (row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); row.click(); }
-  if (e.target.id === "dm-bar" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) { const d = demoState.list[demoState.index], s = Math.max(0, Math.min(d.duration_seconds, demoState.time + (e.key === "ArrowRight" ? 5 : -5))); demoState.provider?.seek(s); demoState.time = s; demoUI(); }
-});
- 
+document.addEventListener("click", e => { if (e.target.closest("[data-spotify-retry]")) loadSpotify(concert(), true); });
