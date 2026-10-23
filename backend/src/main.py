@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
 from src.routers import auth, concerts, orders, venues
+from src.routers import tickets
 
 
 
@@ -23,6 +24,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(concerts.router)
 app.include_router(orders.router)
+app.include_router(tickets.router)
 app.include_router(venues.router)
 
 
