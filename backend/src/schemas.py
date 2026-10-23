@@ -195,6 +195,31 @@ class SpotifyErrorOut(BaseModel):
     detail: SpotifyErrorDetail
 
 
+# ============================================================
+# Spotify — galería del artista
+# ============================================================
+
+class ArtistGalleryImageOut(BaseModel):
+    url: str
+    width: int | None = Field(default=None, gt=0)
+    height: int | None = Field(default=None, gt=0)
+
+
+class ArtistGalleryArtistOut(BaseModel):
+    id: str
+    name: str
+    spotify_url: str
+
+
+class ConcertArtistGalleryOut(BaseModel):
+    concert_id: int
+    source: Literal["spotify"] = "spotify"
+    status: Literal["ok", "not_found", "ambiguous", "no_images"]
+    artist: ArtistGalleryArtistOut | None = None
+    images: list[ArtistGalleryImageOut] = Field(default_factory=list)
+    message: str | None = None
+
+
 # Ticketmaster — próximos conciertos del artista
 from datetime import date as EventDate, time as EventTime
 
