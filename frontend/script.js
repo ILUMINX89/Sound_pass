@@ -30,6 +30,7 @@ async function api(path, options = {}) {
 function goTo(id) {
   if (id !== "detail" && typeof spotifyView !== "undefined" && spotifyView) spotifyClear();
   if (id !== "detail" && typeof artistBioView !== "undefined" && artistBioView) artistBioClear();
+  if (id !== "detail" && typeof upcomingView !== "undefined" && upcomingView) upcomingClear();
   document.querySelectorAll("[data-screen]").forEach(el => el.classList.toggle("is-active", el.id === `screen-${id}`));
   document.querySelectorAll(".primary-nav__link[data-active-on]").forEach(el => el.classList.toggle("is-active", el.dataset.activeOn.split(",").includes(id)));
   if (id === "checkout") renderCheckout(); if (id === "mytickets") loadTickets(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -89,7 +90,7 @@ function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getEleme
 function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
  
 async function openConcert(id) {
-  spotifyClear(); loadArtistBio(Number(id)); // la biografía va por su cuenta: si Wikipedia falla, el detalle y la compra siguen igual
+  spotifyClear(); loadUpcomingEvents(Number(id)); loadArtistBio(Number(id)); // la biografía va por su cuenta: si Wikipedia falla, el detalle y la compra siguen igual
   state.selectedConcertId = Number(id); state.selectedConcert = null; state.selectedTicketTypeId = null; state.qty = 1; goTo("detail"); document.querySelector(".detail-title").textContent = "Cargando concierto..."; document.querySelector(".detail-sub").textContent = ""; document.getElementById("ticket-options").innerHTML = "";
   try { const c = await api(`/concerts/${id}`); state.selectedConcert = c; state.selectedTicketTypeId = (c.ticket_types.find(t => t.quantity_available > 0) || c.ticket_types[0])?.id ?? null; renderDetail(); } catch (error) { document.querySelector(".detail-title").textContent = "No fue posible cargar el concierto"; document.querySelector(".detail-sub").textContent = error.message; }
 }
@@ -262,4 +263,69 @@ async function loadArtistBio(id, force = false) {
   }
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-artist-bio-retry]"); if (!b || b.disabled) return; b.disabled = true; loadArtistBio(state.selectedConcertId, true); });
+ 
+/* ===== Próximos conciertos del artista (Ticketmaster) =====
+   GET /concerts/{id}/upcoming-events  (misma base y mismo api() que el resto)
+   -> { concert_id, artist, source: "ticketmaster", status: "ok"|"no_events"|"not_found"|"ambiguous", events: [{ id, date, time, timezone, city, country, venue }], message? }
+   Solo informativo: sin enlaces ni botones de compra; las fechas no implican entradas en SoundPass.
+   La API key vive solo en el backend (que cachea 15 min): una consulta por apertura del detalle, sin sondeos.
+   La hora ya es la local del evento: no se convierte a la zona del navegador. La fecha se formatea como día de calendario (fmtDate, UTC).
+   Todo lo que viene de la API se inserta con textContent. */
+var upcomingView = { concertId: null, req: 0, controller: null };
+const upcomingRoot = () => document.getElementById("upcoming-events");
+const upcomingBody = () => document.getElementById("upcoming-events-body");
+const UPCOMING_MSG = {
+  loading: "Cargando próximos conciertos…",
+  no_events: "No hay próximos conciertos registrados para este artista.",
+  not_found: "No encontramos información de fechas para este artista.",
+  ambiguous: "No pudimos identificar con certeza a este artista para mostrar sus fechas.",
+  unavailable: "La información de próximos conciertos no está disponible en este momento.",
+  concert_not_found: "No se encontró el concierto.",
+  error: "No se pudo cargar la información de próximos conciertos."
+};
+function upcomingClear() {
+  upcomingView.req++; upcomingView.controller?.abort(); upcomingView.controller = null; upcomingView.concertId = null;
+  const body = upcomingBody(), root = upcomingRoot(); if (body) { body.replaceChildren(); body.setAttribute("aria-busy", "false"); body.className = "ue-card"; } if (root) root.hidden = true;
+}
+const upcomingText = v => typeof v === "string" && v.trim() ? v.trim() : "";
+function upcomingNode(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text !== undefined) el.textContent = text; return el; }
+function renderUpcoming(kind, opts = {}) {
+  const body = upcomingBody(); if (!body) return;
+  body.setAttribute("aria-busy", kind === "loading" ? "true" : "false"); body.replaceChildren(); body.className = "ue-card";
+  if (kind === "loading") { body.classList.add("is-loading"); body.append(upcomingNode("div", "ue-skel"), upcomingNode("p", "ue-status", UPCOMING_MSG.loading)); return; }
+  if (kind === "notice") { body.classList.add("is-notice"); body.append(upcomingNode("p", "ue-status", opts.text)); return; }
+  const list = upcomingNode("ul", "ue-list");
+  opts.events.forEach(ev => {
+    const li = upcomingNode("li", "ue-item"), when = upcomingNode("div", "ue-when");
+    when.append(upcomingNode("strong", "ue-date", fmtDate(ev.date, true)), upcomingNode("span", "ue-time", ev.time ? `${fmtTime(ev.time)} · hora local` : "Hora por confirmar"));
+    li.append(when);
+    const where = upcomingNode("div", "ue-where"), place = [upcomingText(ev.city), upcomingText(ev.country)].filter(Boolean).join(", "), venueName = upcomingText(ev.venue);
+    if (venueName) where.append(upcomingNode("strong", "ue-venue", venueName));
+    if (place) where.append(upcomingNode("span", "ue-place", place));
+    if (where.childNodes.length) li.append(where);
+    list.append(li);
+  });
+  body.append(list, upcomingNode("p", "ue-note", "Las fechas son informativas y no implican disponibilidad de entradas en SoundPass."), upcomingNode("p", "ue-source", "Fuente: Ticketmaster · Información de fechas"));
+}
+async function loadUpcomingEvents(id) {
+  const root = upcomingRoot(); if (!root || !Number.isInteger(id) || id <= 0) return;
+  if (upcomingView.concertId === id) return; // ya cargada o en curso: sin consultas duplicadas ni continuas
+  upcomingClear(); upcomingView.concertId = id;
+  const req = upcomingView.req, controller = upcomingView.controller = new AbortController(), current = () => req === upcomingView.req && state.selectedConcertId === id;
+  root.hidden = false; renderUpcoming("loading");
+  try {
+    const data = await api(`/concerts/${id}/upcoming-events`, { signal: controller.signal });
+    if (!current()) return; // respuesta tardía de otro concierto: se descarta
+    if (!data || typeof data !== "object" || Number(data.concert_id) !== id) return renderUpcoming("notice", { text: UPCOMING_MSG.error });
+    const msg = upcomingText(data.message);
+    if (data.status === "ok") {
+      const events = (Array.isArray(data.events) ? data.events : []).filter(ev => ev && typeof ev === "object" && /^\d{4}-\d{2}-\d{2}/.test(String(ev.date || ""))).slice(0, 10); // mismo orden recibido
+      events.length ? renderUpcoming("list", { events }) : renderUpcoming("notice", { text: msg || UPCOMING_MSG.no_events });
+    } else if (data.status === "no_events" || data.status === "not_found" || data.status === "ambiguous") renderUpcoming("notice", { text: msg || UPCOMING_MSG[data.status] });
+    else renderUpcoming("notice", { text: UPCOMING_MSG.error });
+  } catch (error) {
+    if (error?.name === "AbortError" || !current()) return; // cancelar no es un error
+    renderUpcoming("notice", { text: error.status === 404 ? UPCOMING_MSG.concert_not_found : error.status === 502 || error.status === 503 ? UPCOMING_MSG.unavailable : UPCOMING_MSG.error });
+  }
+}
  

@@ -1441,6 +1441,47 @@ input, select { font-family: inherit; }
 }
  
 /* ============================================================
+   PRÓXIMOS CONCIERTOS DEL ARTISTA (Ticketmaster, informativo)
+   Prefijo ue- para no chocar con otros selectores
+   ============================================================ */
+.ue { margin-top: 44px; }
+.ue[hidden] { display: none; }
+.ue-head { margin-bottom: 20px; }
+.ue-head h2 { font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.ue-head h2::before { content: ""; width: 5px; height: 24px; border-radius: 3px; background: var(--grad); }
+.ue-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 28px; padding: 12px 28px 20px; box-shadow: var(--shadow-card); }
+.ue-list { list-style: none; margin: 0; padding: 0; }
+.ue-item { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 1.4fr); gap: 8px 24px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+.ue-item:last-child { border-bottom: 0; }
+.ue-when, .ue-where { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ue-date { font-family: var(--font-display); font-size: 16px; color: var(--text); }
+.ue-time { font-size: 13.5px; color: var(--wine-400); font-weight: 600; }
+.ue-venue { font-size: 15px; color: var(--text); font-weight: 600; }
+.ue-place { font-size: 13.5px; color: var(--text-dim); }
+.ue-date, .ue-venue, .ue-place { overflow-wrap: anywhere; }
+.ue-note { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-faint); }
+.ue-source { margin: 6px 0 0; font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
+ 
+/* Cargando */
+.ue-card.is-loading { padding: 20px 28px; }
+.ue-card.is-loading .ue-status { margin: 12px 0 0; font-size: 13px; color: var(--text-faint); }
+.ue-skel { height: 84px; border-radius: 16px; background: linear-gradient(90deg, #1d1016 0%, #2a1620 50%, #1d1016 100%); background-size: 200% 100%; animation: dm-shimmer 1.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .ue-skel { animation: none; } }
+ 
+/* Sin fechas / ambiguo / no disponible */
+.ue-card.is-notice { padding: 18px 20px; background: var(--amber-bg); border: 1px dashed rgba(255, 196, 107, .35); }
+.ue-card.is-notice .ue-status { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-dim); }
+ 
+@media (max-width: 640px) {
+  .ue { margin-top: 36px; }
+  .ue-head h2 { font-size: 21px; }
+  .ue-card { border-radius: 22px; padding: 6px 16px 16px; }
+  .ue-card.is-loading { padding: 16px; }
+  .ue-card.is-notice { padding: 16px; }
+  .ue-item { grid-template-columns: 1fr; gap: 10px; }
+}
+ 
+/* ============================================================
    HU-02 — RESPONSIVE
    Breakpoints: 1180 (laptop chico) · 980 (tableta) · 768 · 640 (móvil) · 400 (móvil chico)
    Sin JavaScript: el menú móvil es una segunda fila con scroll horizontal.
