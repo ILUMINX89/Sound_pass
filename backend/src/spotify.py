@@ -164,7 +164,7 @@ class SpotifyArtistError(Exception):
         self.retry_after = retry_after
 
 
-def get_artist_player(artist_name: str):
+def get_artist_player(artist_name: str, *, include_images: bool = False):
     import re
     import unicodedata
 
@@ -303,6 +303,74 @@ def get_artist_player(artist_name: str):
     artist = next(iter(matches.values()))
     artist_id = artist["id"]
 
+    if include_images:
+        from urllib.parse import urlsplit
+
+        raw_images = artist.get("images", [])
+
+        if not isinstance(raw_images, list):
+            raise SpotifyArtistError(
+                "invalid_response",
+                "Spotify devolvió una lista de imágenes inválida.",
+                status_code=502,
+            )
+
+        images = []
+        seen_urls = set()
+
+        def valid_dimension(value):
+            if type(value) is int and value > 0:
+                return value
+            return None
+
+        for item in raw_images:
+            if not isinstance(item, dict):
+                continue
+
+            image_url = item.get("url")
+
+            if not isinstance(image_url, str):
+                continue
+
+            image_url = image_url.strip()
+
+            try:
+                parsed = urlsplit(image_url)
+                valid_url = (
+                    parsed.scheme == "https"
+                    and bool(parsed.hostname)
+                    and parsed.username is None
+                    and parsed.password is None
+                )
+            except ValueError:
+                valid_url = False
+
+            if not valid_url or image_url in seen_urls:
+                continue
+
+            seen_urls.add(image_url)
+            images.append({
+                "url": image_url,
+                "width": valid_dimension(item.get("width")),
+                "height": valid_dimension(item.get("height")),
+            })
+
+        return {
+            "status": "ok" if images else "no_images",
+            "artist": {
+                "id": artist_id,
+                "name": artist["name"],
+                "spotify_url": (
+                    f"https://open.spotify.com/artist/{artist_id}"
+                ),
+            },
+            "images": images,
+            "message": (
+                None if images
+                else "El artista no tiene imágenes disponibles en Spotify."
+            ),
+        }
+
     return {
         "status": "ok",
         "artist": {
@@ -316,4 +384,13 @@ def get_artist_player(artist_name: str):
             ),
         },
         "message": None,
+    }
+
+
+def get_artist_gallery(artist_name: str):
+    result = get_artist_player(artist_name, include_images=True)
+
+    return {
+        **result,
+        "images": result.get("images", []),
     }

@@ -6,7 +6,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from src import models, schemas
 from src.database import get_db
-from src.spotify import SpotifyArtistError, get_artist_player
+from src.spotify import (
+    SpotifyArtistError,
+    get_artist_gallery,
+    get_artist_player,
+)
 
 from fastapi.responses import JSONResponse
 from src.wikipedia import get_artist_bio, WikipediaUnavailableError
@@ -320,6 +324,81 @@ def get_concert_spotify(
 
         if error.retry_after is not None:
             headers = {"Retry-After": error.retry_after}
+
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={
+                "code": error.code,
+                "message": error.message,
+            },
+            headers=headers,
+        ) from None
+
+    return {
+        "concert_id": concert_id,
+        **result,
+    }
+
+
+# ============================================================
+# GALERÍA DEL ARTISTA — SPOTIFY
+# ============================================================
+
+@router.get(
+    "/{concert_id}/artist-gallery",
+    response_model=schemas.ConcertArtistGalleryOut,
+    summary="Consultar imágenes del artista desde Spotify",
+    responses={
+        404: {
+            "description": "Concierto inexistente",
+            "model": schemas.SpotifyErrorOut,
+        },
+        502: {
+            "description": "Respuesta inválida de Spotify",
+            "model": schemas.SpotifyErrorOut,
+        },
+        503: {
+            "description": (
+                "Spotify sin configurar, acceso rechazado, "
+                "límite de consultas o servicio no disponible"
+            ),
+            "model": schemas.SpotifyErrorOut,
+        },
+    },
+)
+def get_concert_artist_gallery(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    """Devuelve imágenes que pueden ser la misma foto en distintos tamaños."""
+    row = (
+        db.query(models.Concert.artist)
+        .filter(models.Concert.id == concert_id)
+        .first()
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "concert_not_found",
+                "message": "Concierto no encontrado.",
+            },
+        )
+
+    artist_name = row[0] or ""
+
+    # Libera la conexión antes de consultar el servicio externo.
+    db.rollback()
+
+    try:
+        result = get_artist_gallery(artist_name)
+    except SpotifyArtistError as error:
+        headers = (
+            {"Retry-After": error.retry_after}
+            if error.retry_after is not None
+            else None
+        )
 
         raise HTTPException(
             status_code=error.status_code,
