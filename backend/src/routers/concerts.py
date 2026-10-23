@@ -6,11 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from src import models, schemas
 from src.database import get_db
-from src.spotify import (
-    SpotifyArtistError,
-    get_artist_image,
-    get_artist_player,
-)
+from src.spotify import SpotifyArtistError, get_artist_player
 
 router = APIRouter(prefix="/concerts", tags=["concerts"])
 
@@ -50,43 +46,14 @@ def list_concerts(
 
     results = []
 
-    database_changed = False
-
     for c in concerts:
-
-        # ----------------------------------------------------
-        # IMAGEN DEL ARTISTA
-        # ----------------------------------------------------
-        #
-        # Si no existe imagen o tiene una ruta local vieja
-        # como /images/shakira.jpg, buscarla en Spotify.
-        #
-        needs_spotify_image = (
-            not c.image_url
-            or c.image_url.startswith("/images/")
-            or c.image_url.startswith("images/")
-        )
-
-        if needs_spotify_image:
-            print(f"Buscando imagen de " f"{c.artist} en Spotify...")
-
-            image = get_artist_image(c.artist)
-
-            if image:
-                print(f"Imagen encontrada para " f"{c.artist}: {image}")
-
-                c.image_url = image
-
-                database_changed = True
-
-            else:
-                print(f"No se encontró imagen " f"para {c.artist}")
 
         # ----------------------------------------------------
         # PRECIO MÁS BAJO DEL CONCIERTO
         # ----------------------------------------------------
 
         price_from = min((t.price for t in c.ticket_types), default=0)
+        tickets_available = sum(t.quantity_available for t in c.ticket_types)
 
         # ----------------------------------------------------
         # RESPUESTA DEL CONCIERTO
@@ -103,12 +70,9 @@ def list_concerts(
                 image_url=c.image_url,
                 venue=c.venue,
                 price_from=price_from,
+                tickets_available=tickets_available,
             )
         )
-
-    # Guardar las imágenes encontradas en PostgreSQL
-    if database_changed:
-        db.commit()
 
     # --------------------------------------------------------
     # ORDENAMIENTO
@@ -145,27 +109,6 @@ def get_concert(concert_id: int, db: Session = Depends(get_db)):
     if not concert:
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
-    # Si tiene una imagen local vieja,
-    # intentar reemplazarla también aquí.
-    needs_spotify_image = (
-        not concert.image_url
-        or concert.image_url.startswith("/images/")
-        or concert.image_url.startswith("images/")
-    )
-
-    if needs_spotify_image:
-        print(f"Buscando imagen de " f"{concert.artist} en Spotify...")
-
-        image = get_artist_image(concert.artist)
-
-        if image:
-            concert.image_url = image
-
-            db.commit()
-            db.refresh(concert)
-
-            print(f"Imagen encontrada para " f"{concert.artist}: {image}")
-
     return concert
 
 
@@ -182,16 +125,6 @@ def create_concert(payload: schemas.ConcertCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Recinto no encontrado")
 
     concert = models.Concert(**payload.model_dump())
-
-    # Si no se envía una imagen,
-    # buscar automáticamente en Spotify.
-    if not concert.image_url:
-        print(f"Buscando imagen de " f"{concert.artist} en Spotify...")
-
-        image = get_artist_image(concert.artist)
-
-        if image:
-            concert.image_url = image
 
     db.add(concert)
 
@@ -225,21 +158,6 @@ def update_concert(
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(concert, field, value)
-
-    # Si se cambió el artista o la imagen está vacía/local,
-    # volver a intentar obtener imagen de Spotify.
-    needs_spotify_image = (
-        not concert.image_url
-        or concert.image_url.startswith("/images/")
-        or concert.image_url.startswith("images/")
-    )
-
-    if needs_spotify_image:
-
-        image = get_artist_image(concert.artist)
-
-        if image:
-            concert.image_url = image
 
     db.commit()
 

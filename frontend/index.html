@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-
+ 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,9 +12,9 @@
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-
+ 
 <body>
-
+ 
   <!-- ============ NAVBAR (shared) ============ -->
   <header class="topbar">
     <div class="topbar__inner">
@@ -25,13 +25,13 @@
         </span>
         SoundPass
       </button>
-
+ 
       <nav class="primary-nav" aria-label="Navegación principal">
         <button class="primary-nav__link" data-nav="listing" data-active-on="listing">Conciertos</button>
-        <button class="primary-nav__link" data-nav="mytickets" data-active-on="mytickets,cancelled">Mis boletos</button>
+        <button class="primary-nav__link" data-nav="mytickets" data-active-on="mytickets,cancelled,orderdetail">Mis boletos</button>
         <button class="primary-nav__link" data-nav="help" data-active-on="help">Ayuda</button>
       </nav>
-
+ 
       <div class="topbar__right">
         <label class="search" aria-label="Buscar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -54,9 +54,9 @@
       </div>
     </div>
   </header>
-
+ 
   <main id="app">
-
+ 
     <!-- ============ 1. HOME ============ -->
     <section class="screen" id="screen-home" data-screen>
       <div class="hero">
@@ -73,7 +73,7 @@
           </button>
           <p class="hero__hint">Sin filas, sin intermediarios y con reembolso si cancelas.</p>
         </div>
-
+ 
         <div class="hero__visual" aria-hidden="true">
           <div class="vinyl"></div>
           <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -81,7 +81,7 @@
           <div class="float-chip float-chip--b"><span class="float-chip__dot">✓</span><span>Pago seguro<small>Tarjeta, PSE, Nequi</small></span></div>
         </div>
       </div>
-
+ 
       <div class="perks">
         <div class="perk">
           <span class="perk__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
@@ -96,7 +96,7 @@
           <div><strong>Cancela fácil</strong><span>Reembolso en 3 a 5 días hábiles</span></div>
         </div>
       </div>
-
+ 
       <div class="section-wrap">
         <div class="section-head">
           <h2>Conciertos destacados</h2>
@@ -105,20 +105,20 @@
         <div class="feature-grid" id="featured-grid"></div>
       </div>
     </section>
-
+ 
     <!-- ============ 2. LISTING ============ -->
     <section class="screen" id="screen-listing" data-screen>
       <div class="listing-layout">
         <aside class="filters">
           <h3>Filtros</h3>
-
+ 
           <div class="filter-group">
             <label for="f-city">Ciudad</label>
             <select id="f-city">
               <option value="">Todas</option>
             </select>
           </div>
-
+ 
           <div class="filter-group">
             <label for="f-date">Fecha</label>
             <select id="f-date">
@@ -127,15 +127,15 @@
               <option value="three_months">Próximos 3 meses</option>
             </select>
           </div>
-
+ 
           <div class="filter-group">
             <label>Género</label>
             <div class="checkbox-list" id="genre-filters"></div>
           </div>
-
+ 
           <p class="filter-tip"><b>Tip:</b> combina ciudad, fecha y género, o usa el buscador de arriba para encontrar tu concierto más rápido.</p>
         </aside>
-
+ 
         <div class="listing-main">
           <div class="listing-head">
             <h2 id="concert-count">Conciertos (0)</h2>
@@ -145,12 +145,12 @@
               <option value="price_desc">Precio: mayor a menor</option>
             </select>
           </div>
-
+ 
           <div class="concert-list" id="concert-list"></div>
         </div>
       </div>
     </section>
-
+ 
     <!-- ============ 3. DETAIL ============ -->
     <section class="screen" id="screen-detail" data-screen>
       <button class="back-link" data-nav="listing">
@@ -160,7 +160,7 @@
         </svg>
         Volver a conciertos
       </button>
-
+ 
       <div class="detail-layout">
         <div class="detail-left">
           <div class="detail-poster dynamic-art">
@@ -170,22 +170,23 @@
           <div>
             <h1 class="detail-title"></h1>
             <p class="detail-sub"></p>
+            <div class="cs-row cs-row--detail" id="detail-status"></div>
           </div>
-
+ 
           <div class="stage-map">
             <span class="stage-map__label">ESCENARIO</span>
             <div id="stage-zones" class="stage-zones"></div>
           </div>
         </div>
-
+ 
         <aside class="ticket-panel">
           <h3>Tipos de boleto</h3>
-
+ 
           <div class="ticket-options" id="ticket-options"></div>
-
+ 
           <div class="meta-info"></div>
           <p class="detail-blurb"></p>
-
+ 
           <div class="qty-row">
             <span>Cantidad</span>
             <div class="stepper">
@@ -194,13 +195,16 @@
               <button class="stepper__btn" id="qty-plus" aria-label="Sumar">+</button>
             </div>
           </div>
-
+ 
           <button class="btn btn--primary btn--full" data-nav="checkout">Continuar</button>
           <p class="panel-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Aún no se te cobra nada. Revisarás todo en el siguiente paso.</p>
         </aside>
       </div>
+ 
+      <!-- Demos del concierto: lo pinta script.js (renderDemos) -->
+      <section class="dm" id="concert-demos" aria-label="Demos del concierto"></section>
     </section>
-
+ 
     <!-- ============ 4. CHECKOUT ============ -->
     <section class="screen" id="screen-checkout" data-screen>
       <h1 class="page-title">Checkout</h1>
@@ -216,7 +220,7 @@
               <p class="summary-item__meta"></p>
             </div>
           </div>
-
+ 
           <dl class="summary-rows">
             <div>
               <dt>Tipo:</dt>
@@ -247,7 +251,7 @@
             <span id="co-total"></span>
           </div>
         </div>
-
+ 
         <div class="payment-card">
           <h3>Método de pago</h3>
           <div class="payment-options" id="payment-options">
@@ -269,7 +273,7 @@
               <span class="pay-badge">NEQUI</span>
             </label>
           </div>
-
+ 
           <div class="card-fields">
             <div class="field">
               <label>Número de tarjeta</label>
@@ -290,7 +294,7 @@
               </div>
             </div>
           </div>
-
+ 
           <button class="btn btn--primary btn--full" id="pay-button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2" />
@@ -301,7 +305,7 @@
         </div>
       </div>
     </section>
-
+ 
     <!-- ============ 5. SUCCESS ============ -->
     <section class="screen screen--center" id="screen-success" data-screen>
       <div class="status-icon status-icon--success">
@@ -312,9 +316,9 @@
       </div>
       <h1 class="status-title">¡Compra exitosa!</h1>
       <p class="status-sub">Tus boletos han sido generados correctamente.</p>
-
+ 
       <div class="order-card" id="success-order"></div>
-
+ 
       <div class="btn-row">
         <button class="btn btn--primary" data-nav="mytickets">Ver mis boletos</button>
         <button class="btn btn--outline" id="download-receipt">
@@ -326,40 +330,53 @@
         </button>
       </div>
     </section>
-
+ 
     <!-- ============ 6/9. MY TICKETS ============ -->
     <section class="screen" id="screen-mytickets" data-screen>
       <h1 class="page-title">Mis boletos</h1>
-
+ 
       <div class="tabs">
         <button class="tab is-active" data-tab="proximos">Próximos</button>
         <button class="tab" data-tab="historial">Historial</button>
       </div>
-
+ 
       <div class="ticket-list" id="ticket-list"></div>
     </section>
-
+ 
+    <!-- ============ 6b. DETALLE DE ORDEN (HU-03) ============ -->
+    <section class="screen" id="screen-orderdetail" data-screen>
+      <button class="back-link" id="order-detail-back" data-nav="mytickets">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        Volver a Mis boletos
+      </button>
+ 
+      <div id="order-detail"></div>
+    </section>
+ 
     <!-- ============ HELP / PREGUNTAS FRECUENTES ============ -->
     <section class="screen" id="screen-help" data-screen>
-
+ 
       <div class="help-header">
         <span class="help-header__eyebrow">CENTRO DE AYUDA</span>
-
+ 
         <h1 class="page-title">
           Preguntas frecuentes
         </h1>
-
+ 
         <p>
           Encuentra respuestas rápidas sobre compras, boletos,
           pagos y cancelaciones.
         </p>
       </div>
-
+ 
       <div class="faq-grid">
-
+ 
         <details class="faq-item">
           <summary>¿Cómo compro un boleto?</summary>
-
+ 
           <p>
             Ve a la sección Conciertos, selecciona el evento al que deseas
             asistir, escoge el tipo de boleto y la cantidad. Después pulsa
@@ -367,32 +384,32 @@
             completar la compra.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Necesito una cuenta para comprar?</summary>
-
+ 
           <p>
             Sí. Debes iniciar sesión o crear una cuenta antes de finalizar
             una compra. De esta forma tus boletos quedarán asociados a tu
             usuario.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Dónde puedo ver mis boletos?</summary>
-
+ 
           <p>
             Puedes consultar tus boletos desde la opción "Mis boletos"
             ubicada en el menú principal o desde el menú de tu cuenta.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Puedo cancelar una compra?</summary>
-
+ 
           <p>
             Sí. Si tu compra todavía aparece como confirmada, entra a
             "Mis boletos" y selecciona la opción "Cancelar compra".
@@ -400,32 +417,32 @@
             cancelación.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Cuánto tarda un reembolso?</summary>
-
+ 
           <p>
             Después de cancelar una compra, el reembolso será procesado
             al mismo método de pago utilizado y puede tardar entre
             3 y 5 días hábiles.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Qué métodos de pago puedo utilizar?</summary>
-
+ 
           <p>
             SoundPass permite seleccionar tarjeta de crédito o débito,
             PSE y Nequi/Daviplata durante el proceso de compra.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Qué hago si no aparecen los conciertos?</summary>
-
+ 
           <p>
             Primero verifica tu conexión a Internet y vuelve a cargar
             la página. Si continúa apareciendo un mensaje indicando que
@@ -433,41 +450,41 @@
             encontrarse temporalmente fuera de línea.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Puedo descargar un comprobante de mi compra?</summary>
-
+ 
           <p>
             Sí. Después de realizar una compra correctamente aparecerá
             el botón "Descargar comprobante" en la pantalla de
             confirmación.
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Qué pasa si cierro la página después de comprar?</summary>
-
+ 
           <p>
             Tus compras quedan asociadas a tu cuenta. Puedes volver a
             iniciar sesión y consultar tus boletos desde la sección
             "Mis boletos".
           </p>
         </details>
-
-
+ 
+ 
         <details class="faq-item">
           <summary>¿Puedo comprar varios boletos para un mismo concierto?</summary>
-
+ 
           <p>
             Sí. Dentro del concierto puedes seleccionar la cantidad de
             boletos que deseas comprar, siempre que exista disponibilidad.
           </p>
         </details>
-
+ 
       </div>
-
+ 
       <div class="help-contact">
         <div>
           <strong>¿Aún tienes dudas?</strong>
@@ -475,9 +492,9 @@
         </div>
         <button class="btn btn--outline" data-nav="listing">Ver conciertos</button>
       </div>
-
+ 
     </section>
-
+ 
     <!-- ============ 8. CANCELLED ============ -->
     <section class="screen screen--center" id="screen-cancelled" data-screen>
       <div class="status-icon status-icon--success">
@@ -488,7 +505,7 @@
       </div>
       <h1 class="status-title">Compra cancelada</h1>
       <p class="status-sub">Tu compra ha sido cancelada correctamente.</p>
-
+ 
       <div class="info-banner">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
@@ -496,26 +513,26 @@
         </svg>
         <span>El reembolso será procesado en un plazo de 3 a 5 días hábiles al mismo método de pago.</span>
       </div>
-
+ 
       <div class="order-card order-card--compact">
         <div class="order-card__head">
           <span id="cancelled-order-code"></span>
           <span class="order-card__date" id="cancelled-order-date"></span>
         </div>
       </div>
-
+ 
       <button class="btn btn--outline" data-nav="mytickets">Volver a mis boletos</button>
     </section>
-
+ 
   </main>
-
+ 
   <footer class="site-footer">
     <div class="site-footer__inner">
       <span class="site-footer__brand">SoundPass</span>
       <span>Vive la música en vivo · Compra segura y sin filas</span>
     </div>
   </footer>
-
+ 
   <!-- ============ 7. CANCEL MODAL ============ -->
   <div class="modal-overlay" id="cancel-modal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -534,16 +551,16 @@
       <h2 class="modal__title" id="modal-title">Cancelar compra</h2>
       <p class="modal__sub">¿Estás seguro de que deseas cancelar esta compra? Esta acción no se puede deshacer. El
         reembolso será procesado en un plazo de 3 a 5 días hábiles.</p>
-
+ 
       <div class="modal-ticket" id="cancel-ticket"></div>
-
+ 
       <div class="modal__actions">
         <button class="btn btn--outline btn--full" id="modal-cancel">Volver</button>
         <button class="btn btn--danger btn--full" id="modal-confirm">Sí, cancelar compra</button>
       </div>
     </div>
   </div>
-
+ 
   <!-- ============ AUTH MODAL ============ -->
   <div class="modal-overlay" id="auth-modal" hidden>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
@@ -551,7 +568,7 @@
       <span class="auth-modal__eyebrow">SOUNDPASS</span>
       <h2 class="modal__title" id="auth-title">Inicia sesión para continuar</h2>
       <p class="modal__sub" id="auth-description">Tus boletos y compras quedarán asociados a tu cuenta.</p>
-
+ 
       <form class="auth-form" id="login-form">
         <div class="field"><label for="login-email">Correo electrónico</label><input id="login-email" name="email"
             type="email" autocomplete="email" required></div>
@@ -562,7 +579,7 @@
         <button class="link-btn auth-switch" type="button" data-auth-view="register">¿No tienes cuenta?
           Regístrate</button>
       </form>
-
+ 
       <form class="auth-form" id="register-form" hidden>
         <div class="field"><label for="register-name">Nombre completo</label><input id="register-name" name="full_name"
             type="text" autocomplete="name" required></div>
@@ -576,8 +593,8 @@
       </form>
     </div>
   </div>
-
+ 
   <script src="script.js"></script>
 </body>
-
+ 
 </html>
