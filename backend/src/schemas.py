@@ -218,3 +218,26 @@ class ConcertArtistGalleryOut(BaseModel):
     artist: ArtistGalleryArtistOut | None = None
     images: list[ArtistGalleryImageOut] = Field(default_factory=list)
     message: str | None = None
+
+
+# Ticketmaster — próximos conciertos del artista
+from datetime import date as EventDate, time as EventTime
+
+
+class UpcomingArtistEventOut(BaseModel):
+    id: str
+    date: EventDate
+    time: EventTime | None = None
+    timezone: str | None = None
+    city: str | None = None
+    country: str | None = None
+    venue: str | None = None
+
+
+class ConcertUpcomingEventsOut(BaseModel):
+    concert_id: int
+    artist: str
+    source: Literal["ticketmaster"]
+    status: Literal["ok", "not_found", "ambiguous", "no_events"]
+    events: list[UpcomingArtistEventOut]
+    message: str | None = None
