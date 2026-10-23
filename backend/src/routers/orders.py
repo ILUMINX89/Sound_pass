@@ -172,6 +172,19 @@ def cancel_order(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user),
 ):
+    # Serialize cancellation with ticket PDF issuance.
+    locked_order_id = (
+        db.query(models.Order.id)
+        .filter(
+            models.Order.id == order_id,
+            models.Order.user_id == current_user.id,
+        )
+        .with_for_update()
+        .scalar()
+    )
+    if locked_order_id is None:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+
     order = (
         db.query(models.Order)
         .options(

@@ -1,116 +1,58 @@
-# SoundPass — Plataforma de venta de boletos para conciertos
+# SoundPass - Gestión Colaborativa
 
-Aplicación web full-stack desplegada de extremo a extremo en Microsoft Azure.
-Actividad integradora de la asignatura **Desarrollo de aplicaciones en la nube**,
-Fundación Universitaria Los Libertadores.
+Plataforma web de venta de boletos para conciertos, desarrollada por un equipo de 3 personas con metodología ágil (Kanban en GitHub Projects), integración y despliegue continuos con GitHub Actions y despliegue en la nube de Microsoft Azure.
 
-**Aplicación en producción:** http://68.155.151.9
+Actividad de la asignatura **Desarrollo de aplicaciones en la nube**, Fundación Universitaria Los Libertadores.
+
+| | |
+|---|---|
+| **Aplicación en producción** | http://20.80.47.160 |
+| **Tablero del proyecto** | https://github.com/users/ILUMINX89/projects/2 |
+| **Repositorio** | https://github.com/ILUMINX89/Sound_pass |
+| **Guía de contribución** | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Bitácora de errores** | [docs/bitacora.md](docs/bitacora.md) |
 
 ---
 
 ## Tabla de contenido
 
-- [Descripción del proyecto](#descripción-del-proyecto)
-- [Integrantes](#integrantes)
-- [Stack tecnológico](#stack-tecnológico)
-- [Arquitectura del sistema](#arquitectura-del-sistema)
-- [Modelo de datos](#modelo-de-datos)
-- [API REST](#api-rest)
-- [Instalación local](#instalación-local)
+- [Equipo de Desarrollo](#equipo-de-desarrollo)
+- [Descripción del Proyecto](#descripción-del-proyecto)
+- [Arquitectura](#arquitectura)
+- [Metodología](#metodología)
+- [Sprints Completados](#sprints-completados)
+- [Automatización con GitHub Actions](#automatización-con-github-actions)
+- [Métricas del Proyecto](#métricas-del-proyecto)
+- [Instalación y Uso](#instalación-y-uso)
 - [Despliegue en Azure](#despliegue-en-azure)
-- [Credenciales de prueba](#credenciales-de-prueba)
-- [Problemas encontrados y soluciones](#problemas-encontrados-y-soluciones)
-- [Capturas de pantalla](#capturas-de-pantalla)
+- [API REST](#api-rest)
+- [Lecciones Aprendidas](#lecciones-aprendidas)
 - [Estructura del repositorio](#estructura-del-repositorio)
+- [Enlaces Importantes](#enlaces-importantes)
 
 ---
 
-## Descripción del proyecto
+## Equipo de Desarrollo
 
-**Dominio elegido:** sistema de eventos y venta de boletos.
-
-SoundPass permite consultar un catálogo de conciertos, filtrarlo por ciudad y
-género, registrarse como usuario, comprar boletos de distintas categorías y
-consultar o cancelar las órdenes propias.
-
-El enunciado pedía un CRUD completo sobre al menos dos entidades relacionadas.
-El modelo final tiene **seis tablas** organizadas en dos cadenas de relación:
-
-- **Catálogo:** un recinto (`venues`) aloja muchos conciertos (`concerts`), y
-  cada concierto ofrece varios tipos de boleta (`ticket_types`) con su precio y
-  disponibilidad.
-- **Compra:** un usuario (`users`) genera órdenes (`orders`), y cada orden
-  agrupa sus ítems (`order_items`) con la cantidad comprada.
-
-La base viene poblada con 13 conciertos de prueba en ocho ciudades de Colombia.
+| Rol | Integrante | GitHub |
+|---|---|---|
+| **Product Owner** | Esteban Parra | [@ILUMINX89](https://github.com/ILUMINX89) |
+| **Backend Developer** | Esteban Parra | [@ILUMINX89](https://github.com/ILUMINX89) |
+| **Frontend Developer / QA** | Sergio Arias | [@Sergioa-aR](https://github.com/Sergioa-aR) |
+| **DevOps Engineer** | Camilo Montenegro | [@imaakro](https://github.com/imaakro) |
 
 ---
 
-## Integrantes
+## Descripción del Proyecto
 
-- Sergio Arias
-- Esteban Parra
-- Camilo Montenegro
+**Dominio:** sistema de eventos y venta de boletos.
 
----
+SoundPass permite consultar un catálogo de conciertos, filtrarlo por ciudad y género, registrarse como usuario, comprar boletos de distintas categorías y consultar o cancelar las órdenes propias.
 
-## Stack tecnológico
+El modelo de datos tiene **seis tablas** organizadas en dos cadenas de relación:
 
-| Capa | Tecnología |
-|---|---|
-| Backend | FastAPI 0.115 + SQLAlchemy 2.0 (Python 3.12) |
-| Base de datos | PostgreSQL 16 |
-| Frontend | HTML, CSS y JavaScript sin framework |
-| Autenticación | JWT (python-jose) + bcrypt vía passlib |
-| Contenedores | Docker + Docker Compose |
-| Servidor web | nginx (archivos estáticos y proxy inverso) |
-| Nube | Microsoft Azure — Máquina Virtual Ubuntu 24.04 |
-
-**Servicios cloud implementados:** Azure Virtual Machines, Network Security
-Group (reglas de entrada) y disco administrado. Todos los componentes viven en
-el mismo proveedor, como exige el enunciado.
-
----
-
-## Arquitectura del sistema
-
-```
-                    ┌──────────────────────────────────────────────────────┐
-                    │        Azure · Máquina Virtual Ubuntu 24.04          │
-                    │                  68.155.151.9                        │
-   Navegador        │                                                      │
-   ──────────►  :80 │  ┌──────────┐    ┌───────────────┐   ┌─────────────┐ │
-                    │  │  nginx   │───►│   FastAPI     │──►│ PostgreSQL  │ │
-                    │  │          │    │ contenedor    │   │ contenedor  │ │
-                    │  │ /  → web │    │    :8000      │   │    :5432    │ │
-                    │  │ /api → ↗ │    └───────────────┘   └─────────────┘ │
-                    │  └──────────┘        red interna de Docker           │
-                    └──────────────────────────────────────────────────────┘
-```
-
-Decisiones de diseño relevantes:
-
-1. **Máquina virtual con Docker** en lugar de servicios administrados, para que
-   el entorno local y el de producción sean idénticos: el mismo
-   `docker-compose.yml` corre en ambos.
-2. **nginx como proxy inverso.** El frontend y la API se sirven desde el mismo
-   origen (`http://68.155.151.9` y `http://68.155.151.9/api`), de modo que el
-   navegador nunca cruza orígenes y el problema de CORS desaparece en vez de
-   administrarse.
-3. **Configuración por variables de entorno.** Ninguna credencial está en el
-   código: la cadena de conexión, la clave de firma JWT y los orígenes
-   permitidos se inyectan como variables.
-4. **Superficie mínima expuesta.** Solo el puerto 80 está abierto al exterior.
-   La API (8000) y la base de datos (5432) solo son alcanzables desde la red
-   interna de Docker.
-
----
-
-## Modelo de datos
-
-Diagrama entidad-relación: [`database/diagram.png`](database/diagram.png)
-Esquema completo: [`database/schema.sql`](database/schema.sql)
-Datos de prueba: [`database/seed.sql`](database/seed.sql)
+- **Catálogo:** un recinto (`venues`) aloja muchos conciertos (`concerts`), y cada concierto ofrece varios tipos de boleta (`ticket_types`) con su precio y disponibilidad.
+- **Compra:** un usuario (`users`) genera órdenes (`orders`), y cada orden agrupa sus ítems (`order_items`) con la cantidad comprada.
 
 | Tabla | Descripción | Relaciones |
 |---|---|---|
@@ -123,10 +65,320 @@ Datos de prueba: [`database/seed.sql`](database/seed.sql)
 
 ---
 
+## Arquitectura
+
+- **Frontend:** HTML, CSS y JavaScript sin framework, servido por nginx
+- **Backend:** FastAPI 0.115 + SQLAlchemy 2.0 (Python 3.12), autenticación JWT y contraseñas con bcrypt
+- **Base de datos:** PostgreSQL 16
+- **Infraestructura:** Microsoft Azure, máquina virtual Ubuntu (el profesor confirmó que se puede usar cualquier nube)
+- **CI/CD:** GitHub Actions
+- **Containerización:** Docker y Docker Compose
+
+```
+                    ┌──────────────────────────────────────────────────────┐
+                    │      Azure · Máquina Virtual Ubuntu (soundpass-v2)   │
+                    │                    20.80.47.160                      │
+   Navegador        │                                                      │
+   ──────────►  :80 │  ┌──────────┐    ┌───────────────┐   ┌─────────────┐ │
+                    │  │  nginx   │───►│   FastAPI     │──►│ PostgreSQL  │ │
+                    │  │          │    │ contenedor    │   │ contenedor  │ │
+                    │  │ /  → web │    │    :8000      │   │    :5432    │ │
+                    │  │ /api → ↗ │    └───────────────┘   └─────────────┘ │
+                    │  └──────────┘        red interna de Docker           │
+                    └──────────────────────────────────────────────────────┘
+                              ▲
+                              │ SSH con llave de despliegue
+                    ┌─────────┴──────────┐
+                    │   GitHub Actions   │  merge a production → despliegue
+                    └────────────────────┘
+```
+
+Decisiones de diseño:
+
+1. **Máquina virtual con Docker** para que el entorno local y el de producción sean idénticos: el mismo `docker-compose.yml` corre en ambos.
+2. **nginx como proxy inverso.** El frontend y la API salen del mismo origen (`/` y `/api`), así el navegador no cruza orígenes y no hay problemas de CORS.
+3. **Ninguna credencial en el código.** Las claves del servidor se generan dentro de la VM en un `docker-compose.override.yml` que no se versiona, y las de GitHub Actions están en *Secrets*.
+4. **Superficie mínima expuesta.** En Azure solo están abiertos los puertos 22 (SSH) y 80 (HTTP). La API (8000) y la base de datos (5432) no son accesibles desde internet.
+
+---
+
+## Metodología
+
+Trabajamos con **Kanban** en GitHub Projects, simulando **3 sprints**:
+
+| Sprint | Fechas | Enfoque |
+|---|---|---|
+| Sprint 1 | 13 al 15 de octubre | Configuración del proyecto, seguridad y backend |
+| Sprint 2 | 16 al 18 de octubre | Frontend, integración continua y automatización |
+| Sprint 3 | 19 al 22 de octubre | Despliegue, documentación y mejoras pedidas por el profesor |
+
+**Tablero:** `Backlog → Ready → In Progress → Review → Done`
+
+**Campos personalizados:** Sprint (1, 2, 3), Prioridad (Alta, Media, Baja), Estimación (1, 2, 3, 5, 8), Tipo (Feature, Bug, Documentation, DevOps) y Rol (Backend, Frontend, DevOps, QA, Documentación). El responsable es la persona asignada al issue.
+
+**Ramas:**
+
+```
+main                      versión estable (rama por defecto)
+├── production            lo que está desplegado; cada merge despliega la app
+└── development           integración del sprint
+     ├── feature/sprintN-<funcionalidad>
+     └── fix/<error>
+```
+
+**Flujo de trabajo:** issue con la plantilla → rama `feature/` desde `development` → commits con formato `tipo: descripción` → PR hacia `development` con `Closes #N` → revisión de otro miembro → merge → release a `production` (despliegue automático) → `main`.
+
+El paso a paso completo para cualquier miembro está en [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## Sprints Completados
+
+Estado al 22 de octubre de 2026. Las historias "en revisión" tienen su PR abierto esperando aprobación.
+
+### Sprint 1: configuración y seguridad
+
+| Historia | Responsable | Puntos | Estado | Evidencia |
+|---|---|---|---|---|
+| [#3 Proteger credenciales del repositorio](https://github.com/ILUMINX89/Sound_pass/issues/3) | @imaakro | 2 | ✅ Done | [PR #1](https://github.com/ILUMINX89/Sound_pass/pull/1) |
+| [#5 Estrategia de ramas y plantilla de historias](https://github.com/ILUMINX89/Sound_pass/issues/5) | @imaakro | 2 | ✅ Done | Ramas `main`, `development`, `production` |
+<!-- @ILUMINX89 y @Sergioa-aR: agregar aquí sus historias del Sprint 1 -->
+
+### Sprint 2: frontend, CI y automatización
+
+| Historia | Responsable | Puntos | Estado | Evidencia |
+|---|---|---|---|---|
+| [#4 Integración continua con GitHub Actions](https://github.com/ILUMINX89/Sound_pass/issues/4) | @imaakro | 3 | ✅ Done | [PR #2](https://github.com/ILUMINX89/Sound_pass/pull/2) |
+| [#6 Workflow de automatización del tablero](https://github.com/ILUMINX89/Sound_pass/issues/6) | @imaakro | 5 | ✅ Done | [PR #7](https://github.com/ILUMINX89/Sound_pass/pull/7) |
+| [#8 Mejoras de la interfaz](https://github.com/ILUMINX89/Sound_pass/issues/8) | @Sergioa-aR | 1 | 🔍 En revisión | [PR #20](https://github.com/ILUMINX89/Sound_pass/pull/20) |
+| [#9 Adaptación responsive](https://github.com/ILUMINX89/Sound_pass/issues/9) | @Sergioa-aR | 1 | 🔍 En revisión | [PR #23](https://github.com/ILUMINX89/Sound_pass/pull/23) |
+| [#10 Vista de detalle de orden](https://github.com/ILUMINX89/Sound_pass/issues/10) | @Sergioa-aR | 1 | 🚧 En progreso | |
+<!-- @ILUMINX89: agregar aquí sus historias del Sprint 2 -->
+
+### Sprint 3: despliegue, documentación y mejoras
+
+| Historia | Responsable | Puntos | Estado | Evidencia |
+|---|---|---|---|---|
+| [#11 Plantillas de issues detalladas](https://github.com/ILUMINX89/Sound_pass/issues/11) | @imaakro | 3 | 🔍 En revisión | [PR #12](https://github.com/ILUMINX89/Sound_pass/pull/12) |
+| [#13 Rol y campos automáticos en el tablero](https://github.com/ILUMINX89/Sound_pass/issues/13) | @imaakro | 3 | 🔍 En revisión | [PR #14](https://github.com/ILUMINX89/Sound_pass/pull/14) |
+| [#15 Revisión automática del formato de commits](https://github.com/ILUMINX89/Sound_pass/issues/15) | @imaakro | 2 | 🔍 En revisión | [PR #16](https://github.com/ILUMINX89/Sound_pass/pull/16) |
+| [#17 Guía de contribución y bitácora de errores](https://github.com/ILUMINX89/Sound_pass/issues/17) | @imaakro | 3 | 🔍 En revisión | [PR #18](https://github.com/ILUMINX89/Sound_pass/pull/18) |
+| [#21 Bug: no aparecen conciertos porque sus fechas ya pasaron](https://github.com/ILUMINX89/Sound_pass/issues/21) | @imaakro | 1 | 🔍 En revisión | [PR #22](https://github.com/ILUMINX89/Sound_pass/pull/22) |
+<!-- @imaakro: agregar la historia de despliegue continuo cuando tenga su issue y PR -->
+<!-- @ILUMINX89 y @Sergioa-aR: agregar aquí sus historias del Sprint 3 -->
+
+---
+
+## Automatización con GitHub Actions
+
+| Workflow | Archivo | Cuándo corre | Qué hace |
+|---|---|---|---|
+| **CI** | `.github/workflows/ci.yml` | En cada PR | Instala dependencias y comprueba que el backend funcione |
+| **Project Automation** | `.github/workflows/project-automation.yml` | Al crear, editar o asignar un issue y al abrir o mergear un PR | Llena Rol, Tipo, Prioridad, Sprint y Estimación desde la plantilla, pone etiquetas para filtrar y mueve la tarjeta: asignado → **In Progress**, PR abierto → **Review**, PR mergeado → **Done** |
+| **Revisión de commits** | `.github/workflows/commits.yml` | En cada PR | Falla si algún commit no sigue el formato `tipo: descripción` |
+| **Despliegue (CD)** | `.github/workflows/deploy.yml` | Al hacer merge a `production` (o a mano) | Copia el código a la VM por SSH, reconstruye los contenedores y verifica que `/api/health` responda |
+
+**Plantillas de issue** (`.github/ISSUE_TEMPLATE/`): historia de usuario, bug y feedback de usuario externo, con campos obligatorios para que cualquier persona entienda qué hacer sin preguntar.
+
+**Secretos usados:** `PROJECT_TOKEN` (editar el tablero), `VM_HOST`, `VM_USER`, `VM_SSH_KEY`, `VM_APP_DIR` (despliegue).
+
+---
+
+## Métricas del Proyecto
+
+Datos tomados del tablero y de los PRs del repositorio el **22 de octubre de 2026**. Una historia cuenta como completada cuando su PR se mergea a `development`.
+
+### Resumen
+
+| Métrica | Valor |
+|---|---|
+| **Velocity promedio** | 6 puntos por sprint (sprints 1 y 2) |
+| **Historias completadas** | 4 de 12 (27 puntos planeados; 8 historias en revisión o en progreso) |
+| **Bugs encontrados** | 1 registrado como issue (#21) y 11 incidentes documentados en la [bitácora](docs/bitacora.md) |
+| **Tiempo promedio de resolución (lead time)** | 19,8 horas |
+| **Cycle time promedio** | 20,4 horas |
+| **Throughput** | 2 historias por sprint en los sprints 1 y 2 |
+
+### Velocity: puntos completados por sprint
+
+| Sprint | Puntos planeados | Puntos completados |
+|---|---|---|
+| Sprint 1 | 4 | 4 |
+| Sprint 2 | 11 | 8 |
+| Sprint 3 | 12 | 0 (12 en revisión) |
+
+```mermaid
+xychart-beta
+    title "Velocity por sprint"
+    x-axis ["Sprint 1", "Sprint 2", "Sprint 3"]
+    y-axis "Puntos" 0 --> 14
+    bar [4, 8, 0]
+    line [4, 11, 12]
+```
+
+*Barras: puntos completados. Línea: puntos planeados.*
+
+### Burndown: trabajo restante vs tiempo
+
+```mermaid
+xychart-beta
+    title "Burndown del proyecto (puntos restantes)"
+    x-axis ["Inicio", "Fin Sprint 1", "Fin Sprint 2", "Fin Sprint 3"]
+    y-axis "Puntos restantes" 0 --> 30
+    line [27, 18, 9, 0]
+    line [27, 23, 15, 15]
+```
+
+*Primera línea: ritmo ideal. Segunda línea: trabajo restante real.*
+
+### Lead time y cycle time
+
+- **Lead time:** desde que se crea la historia hasta que su PR se mergea.
+- **Cycle time:** desde el primer commit de la historia (cuando empieza el trabajo) hasta el merge.
+
+| Historia | PR | Lead time | Cycle time | Esperando revisión |
+|---|---|---|---|---|
+| #3 Proteger credenciales | #1 | 19,9 h | 21,0 h | 20,2 h |
+| #4 Integración continua | #2 | 19,9 h | 20,6 h | 20,2 h |
+| #6 Automatización del tablero | #7 | 19,6 h | 19,5 h | 19,4 h |
+| **Promedio** | | **19,8 h** | **20,4 h** | **19,9 h** |
+
+La historia #5 no se incluye porque su issue se creó después de terminar el trabajo.
+
+**Lectura:** casi todo el cycle time es espera de revisión (19,9 de 20,4 horas). El desarrollo es rápido; el cuello de botella es la revisión de PRs.
+
+### Throughput: historias completadas por periodo
+
+| Periodo | Historias completadas |
+|---|---|
+| Sprint 1 | 2 |
+| Sprint 2 | 2 |
+| Sprint 3 | 0 (5 en revisión) |
+
+### Participación
+
+| Integrante | Historias creadas | PRs abiertos |
+|---|---|---|
+| @imaakro | 9 | 8 |
+| @Sergioa-aR | 3 | 3 |
+| @ILUMINX89 | 0 | 0 |
+
+<!-- Actualizar estas cifras después de mergear los PRs pendientes y de que todos registren sus historias -->
+
+---
+
+## Instalación y Uso
+
+**Requisitos:** Git, Docker Desktop y VS Code.
+
+```bash
+git clone https://github.com/ILUMINX89/Sound_pass.git
+cd Sound_pass
+docker compose up -d --build
+```
+
+Docker ejecuta `database/schema.sql` y `database/seed.sql` la primera vez que arranca PostgreSQL, así que la base queda poblada sin pasos adicionales.
+
+| Qué | Dónde |
+|---|---|
+| API | http://127.0.0.1:8000 |
+| Documentación interactiva (Swagger) | http://127.0.0.1:8000/docs |
+| Frontend | abrir `frontend/index.html` con Live Server |
+
+Para empezar desde cero: `docker compose down -v` y otra vez `docker compose up -d --build`.
+
+### Variables de entorno
+
+Copiar `backend/.env.example` a `backend/.env` y ajustar:
+
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión SQLAlchemy a PostgreSQL |
+| `SECRET_KEY` | Clave de firma de los tokens JWT |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Vigencia del token (por defecto 1440) |
+| `ALLOWED_ORIGINS` | Orígenes permitidos por CORS, separados por coma |
+
+### Credenciales de prueba
+
+Se puede registrar una cuenta nueva desde la aplicación, o usar los usuarios de `seed.sql`:
+
+| Correo | Contraseña |
+|---|---|
+| camila.torres@example.com | demo123 |
+| andres.gomez@example.com | demo123 |
+
+Las contraseñas se guardan con hash bcrypt.
+
+---
+
+## Despliegue en Azure
+
+### Despliegue automático (CD)
+
+Al hacer merge de `development` a `production`, el workflow **Despliegue (CD)**:
+
+1. Copia `backend`, `frontend`, `database` y `docker-compose.yml` a la VM por SSH.
+2. Ejecuta `docker compose up -d --build` y copia el frontend a `/var/www/soundpass/`.
+3. Verifica que `http://20.80.47.160/api/health` responda; si no, el workflow sale en rojo.
+
+También se puede lanzar a mano en **Actions → Despliegue (CD) → Run workflow**.
+
+### Preparación de la máquina virtual (una sola vez)
+
+1. VM Ubuntu en Azure con reglas de entrada para los puertos **22** (SSH) y **80** (HTTP).
+2. Instalar nginx y Docker, y agregar el usuario al grupo `docker` para no necesitar `sudo`:
+   ```bash
+   sudo apt-get update && sudo apt-get install -y nginx
+   curl -fsSL https://get.docker.com | sudo sh
+   sudo usermod -aG docker soundpass
+   ```
+3. Agregar la llave pública de despliegue en `~/.ssh/authorized_keys` y guardar la privada como secreto `VM_SSH_KEY` en GitHub.
+4. Crear las credenciales del servidor con claves aleatorias, sin que nadie las vea:
+   ```bash
+   cd ~/Sound_pass
+   DBPASS=$(openssl rand -hex 16)
+   JWT=$(openssl rand -hex 32)
+   cat > docker-compose.override.yml <<EOF
+   services:
+     db:
+       restart: unless-stopped
+       environment:
+         POSTGRES_PASSWORD: $DBPASS
+     api:
+       restart: unless-stopped
+       environment:
+         DATABASE_URL: postgresql+psycopg2://soundpass_user:$DBPASS@db:5432/soundpass
+         SECRET_KEY: $JWT
+         ALLOWED_ORIGINS: http://20.80.47.160
+   EOF
+   ```
+5. Configurar nginx en `/etc/nginx/sites-available/soundpass`:
+   ```nginx
+   server {
+       listen 80;
+       server_name _;
+       root /var/www/soundpass;
+       index index.html;
+
+       location / {
+           try_files $uri $uri/ /index.html;
+       }
+
+       location /api/ {
+           proxy_pass http://127.0.0.1:8000/;
+           proxy_set_header Host $host;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       }
+   }
+   ```
+
+Los contenedores usan `restart: unless-stopped` y nginx corre como servicio del sistema, así que la app vuelve sola si la VM se reinicia.
+
+---
+
 ## API REST
 
-Documentación interactiva generada por FastAPI: `/docs` (Swagger UI).
-Documentación detallada: [`docs/api-documentation.md`](docs/api-documentation.md)
+Documentación interactiva: `/docs` (Swagger UI). En producción todas las rutas van con el prefijo `/api` (por ejemplo `http://20.80.47.160/api/concerts`).
 
 ### Autenticación
 
@@ -140,14 +392,12 @@ Documentación detallada: [`docs/api-documentation.md`](docs/api-documentation.m
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/concerts` | Lista conciertos futuros. Filtros: `city`, `genre`, `sort` |
+| GET | `/concerts` | Lista conciertos futuros. Filtros: `city`, `genre`, `sort` (`date`, `price_asc`, `price_desc`) |
 | GET | `/concerts/{id}` | Detalle con recinto y tipos de boleta |
 | POST | `/concerts` | Crea un concierto. Devuelve 201 |
 | PUT | `/concerts/{id}` | Actualiza un concierto |
 | DELETE | `/concerts/{id}` | Elimina un concierto. Devuelve 204 |
-| GET | `/concerts/{id}/ticket_types` | Relación entre entidades |
-
-El parámetro `sort` acepta `date`, `price_asc` o `price_desc`.
+| GET | `/concerts/{id}/ticket_types` | Tipos de boleta del concierto |
 
 ### Recintos
 
@@ -176,23 +426,15 @@ El parámetro `sort` acepta `date`, `price_asc` o `price_desc`.
 
 ```bash
 # Registro
-curl -X POST http://68.155.151.9/api/auth/register \
+curl -X POST http://20.80.47.160/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"full_name":"Ana Gómez","email":"ana@ejemplo.com","password":"clave123"}'
 
 # Ingreso
-curl -X POST http://68.155.151.9/api/auth/login \
+curl -X POST http://20.80.47.160/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"ana@ejemplo.com","password":"clave123"}'
-
-# Compra (reemplazar <TOKEN> por el access_token recibido)
-curl -X POST http://68.155.151.9/api/orders \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"concert_id":4,"payment_method":"card","items":[{"ticket_type_id":1,"quantity":2}]}'
 ```
-
-### Códigos de estado
 
 | Código | Significado |
 |---|---|
@@ -203,219 +445,59 @@ curl -X POST http://68.155.151.9/api/orders \
 | 409 | No hay disponibilidad suficiente |
 | 422 | El cuerpo de la petición no pasó la validación |
 
-Los errores se devuelven como `{"detail": "mensaje"}`.
-
 ---
 
-## Instalación local
+## Lecciones Aprendidas
 
-**Requisitos:** Docker y Docker Compose.
+El detalle de cada problema, con causa, solución, pros y contras, está en la [bitácora](docs/bitacora.md). Lo más importante:
 
-```bash
-git clone https://github.com/[usuario]/Gestion_conciertos_nube.git
-cd Gestion_conciertos_nube
-docker compose up -d --build
-```
+**Lo que funcionó bien**
+- **Automatizar el tablero.** Las tarjetas se mueven solas y los campos se llenan desde la plantilla, así el tablero refleja el estado real sin esfuerzo manual.
+- **Plantillas y guía de contribución.** Con issues detallados y un `CONTRIBUTING.md` paso a paso, cualquier miembro puede tomar una tarea sin preguntarle a los demás.
+- **Docker en local y en producción.** El mismo `docker-compose.yml` evitó diferencias entre la máquina de cada uno y la nube.
 
-Docker ejecuta `schema.sql` y `seed.sql` automáticamente la primera vez que
-arranca el contenedor de PostgreSQL, así que la base queda poblada sin pasos
-adicionales.
+**Lo que salió mal y qué cambiamos**
+- **Credenciales reales en el repositorio.** Se reemplazaron por valores de ejemplo; ahora los valores reales solo van en *Secrets* o en archivos que Git ignora.
+- **Merges sin revisión.** Se acordó que nadie mergea su propio PR y se documentó en la guía.
+- **`Closes #N` no funciona hacia `development`.** GitHub solo lo reconoce en PRs hacia la rama por defecto; la automatización ahora lee el número de la descripción del PR.
+- **Permisos de GitHub Actions.** El token por defecto no podía leer los commits del PR; cada workflow ahora declara los permisos que necesita.
+- **El despliegue dependía de una sola persona.** Se montó una VM nueva con una llave solo para despliegues, de modo que GitHub Actions despliega sin intervención humana.
+- **Datos de ejemplo con fechas fijas.** Los conciertos de 2025 dejaron de mostrarse en 2026; las fechas de ejemplo deberían ser relativas a la fecha actual.
 
-- API: http://127.0.0.1:8000
-- Documentación: http://127.0.0.1:8000/docs
-- Frontend: abrir `frontend/index.html` con Live Server (puerto 5500), o
-  servirlo con `python3 -m http.server 5500` desde la carpeta `frontend/`.
-
-En local, `frontend/script.js` debe apuntar a `http://127.0.0.1:8000`.
-
-### Variables de entorno
-
-Copiar `backend/.env.example` a `backend/.env` y ajustar:
-
-| Variable | Descripción |
-|---|---|
-| `DATABASE_URL` | Cadena de conexión SQLAlchemy a PostgreSQL |
-| `SECRET_KEY` | Clave de firma de los tokens JWT |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Vigencia del token (por defecto 1440) |
-| `ALLOWED_ORIGINS` | Orígenes permitidos por CORS, separados por coma |
-
----
-
-## Despliegue en Azure
-
-### 1. Máquina virtual
-
-Se creó una VM Ubuntu 24.04 en Azure con IP pública estática. En el Network
-Security Group se habilitaron dos reglas de entrada:
-
-| Puerto | Uso |
-|---|---|
-| 22 | Administración por SSH |
-| 80 | Tráfico HTTP público |
-
-El puerto 5432 (PostgreSQL) y el 8000 (API) **no se exponen**.
-
-### 2. Aplicación
-
-```bash
-ssh soundpass@68.155.151.9
-
-git clone https://github.com/[usuario]/Gestion_conciertos_nube.git
-cd Gestion_conciertos_nube
-```
-
-Se crea un archivo `docker-compose.override.yml` (no versionado) con las
-credenciales reales del servidor:
-
-```yaml
-services:
-  api:
-    build: ./backend
-    container_name: soundpass-api
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql+psycopg2://soundpass_user:<CLAVE>@db:5432/soundpass
-      SECRET_KEY: <CLAVE_JWT>
-      ALLOWED_ORIGINS: http://68.155.151.9
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-```
-
-Y se levanta todo:
-
-```bash
-sudo docker compose up -d --build
-sudo docker compose ps
-curl http://127.0.0.1:8000/health
-```
-
-### 3. Servidor web
-
-```bash
-sudo apt update && sudo apt install -y nginx
-sudo mkdir -p /var/www/soundpass
-sudo cp frontend/* /var/www/soundpass/
-```
-
-Configuración en `/etc/nginx/sites-available/soundpass`:
-
-```nginx
-server {
-    listen 80;
-    server_name 68.155.151.9;
-
-    root /var/www/soundpass;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:8000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-```bash
-sudo ln -sf /etc/nginx/sites-available/soundpass /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-En el servidor, la primera línea de `script.js` queda como
-`const API_URL = "/api";` para que todo salga del mismo origen.
-
-### 4. Verificación
-
-```bash
-curl -I http://127.0.0.1/            # 200 OK, text/html
-curl http://127.0.0.1/api/concerts   # JSON con los conciertos
-```
-
-### Disponibilidad
-
-Los contenedores usan `restart: unless-stopped` y nginx corre como servicio del
-sistema, de modo que la aplicación vuelve sola si la máquina se reinicia.
-
----
-
-## Credenciales de prueba
-
-Puede registrarse una cuenta nueva desde la aplicación, o usar:
-
-| Correo | Contraseña |
-|---|---|
-| [completar si hay usuario semilla] | [completar] |
-
-Las contraseñas se almacenan con hash bcrypt; nunca en texto plano.
-
----
-
-## Problemas encontrados y soluciones
-
-**El frontend cargaba pero ninguna petición respondía.**
-El frontend y la API se servían en puertos distintos, así que el navegador los
-trataba como orígenes separados y bloqueaba las peticiones por política de CORS.
-En vez de mantener una lista de orígenes permitidos, se puso nginx al frente
-como proxy inverso: ahora todo sale del mismo origen y el problema desaparece.
-
-**La página respondía dentro de la VM pero no desde internet.**
-`curl http://127.0.0.1` funcionaba, pero el navegador no llegaba. La causa era
-el Network Security Group de Azure, que filtra el tráfico antes de que alcance
-el sistema operativo. Abrir el puerto en el servidor no basta: hay que agregar
-también la regla de entrada en Azure.
-
-**La API no levantaba junto a la base de datos.**
-El `docker-compose.yml` del servidor solo declaraba el servicio de PostgreSQL.
-Se agregó el servicio `api` mediante un archivo de override, con
-`depends_on: condition: service_healthy` para que espere a que la base pase su
-healthcheck antes de arrancar.
-
-**Credenciales de ejemplo iguales a las de producción.**
-El `.env.example` del repositorio traía credenciales de muestra que coincidían
-con las del despliegue. Se generó una contraseña aleatoria directamente en el
-servidor, almacenada solo en el archivo de override, que no se versiona.
-
----
-
-## Capturas de pantalla
-
-Disponibles en [`docs/screenshots/`](docs/screenshots/):
-
-- Catálogo de conciertos con filtros aplicados
-- Detalle de un concierto con sus tipos de boleta
-- Formulario de registro e ingreso
-- Proceso de compra y confirmación de la orden
-- Vista de "Mis tickets"
-- Documentación Swagger en `/docs`
-- Recursos desplegados en el portal de Azure
-- Consulta a PostgreSQL mostrando una orden recién creada
+**Mejoras futuras**
+- Proteger `development` y `production` con reglas que exijan 1 aprobación antes del merge.
+- Revisar los PRs el mismo día: las métricas muestran que la espera de revisión es casi todo el cycle time.
+- HTTPS con un dominio propio y Let's Encrypt.
+- Pruebas automatizadas del backend dentro del CI.
+- Usar IA en la automatización (por ejemplo, revisión automática de PRs o clasificación de issues) en la entrega final.
 
 ---
 
 ## Estructura del repositorio
 
 ```
-Gestion_conciertos_nube/
+Sound_pass/
 ├── README.md
+├── CONTRIBUTING.md                 # Cómo trabajar en el proyecto paso a paso
 ├── docker-compose.yml
+├── .github/
+│   ├── ISSUE_TEMPLATE/             # Plantillas: historia, bug y feedback externo
+│   └── workflows/
+│       ├── ci.yml
+│       ├── project-automation.yml
+│       ├── commits.yml
+│       └── deploy.yml
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── .env.example
 │   └── src/
-│       ├── main.py             # Aplicación FastAPI y CORS
-│       ├── config.py           # Configuración por variables de entorno
-│       ├── database.py         # Motor y sesiones de SQLAlchemy
-│       ├── models.py           # Modelos ORM
-│       ├── schemas.py          # Esquemas Pydantic
-│       ├── security.py         # Hash de contraseñas y JWT
+│       ├── main.py
+│       ├── config.py
+│       ├── database.py
+│       ├── models.py
+│       ├── schemas.py
+│       ├── security.py
 │       └── routers/
 │           ├── auth.py
 │           ├── concerts.py
@@ -427,28 +509,20 @@ Gestion_conciertos_nube/
 │   └── script.js
 ├── database/
 │   ├── schema.sql
-│   ├── seed.sql
-│   └── diagram.png
-├── docs/
-│   ├── api-documentation.md
-│   ├── deployment-guide.md
-│   └── screenshots/
-└── video/
-    └── sustentacion.mp4
+│   └── seed.sql
+└── docs/
+    ├── bitacora.md                 # Errores, causas, soluciones, pros y contras
+    └── feedback-externo.md         # Pruebas con usuarios fuera del equipo
 ```
 
 ---
 
-## Seguridad
+## Enlaces Importantes
 
-- Contraseñas almacenadas con hash bcrypt.
-- Sesiones mediante token JWT firmado, con expiración configurable.
-- Las rutas de compra y consulta de órdenes rechazan peticiones sin token.
-- Ninguna credencial en el repositorio: todo por variables de entorno.
-- Validación de entradas con Pydantic antes de tocar la base.
-- Consultas a través del ORM, sin construir SQL concatenando cadenas.
-- Un solo puerto público; base de datos y API aisladas en la red interna.
-
-**Pendiente:** HTTPS. La aplicación se sirve por HTTP porque no se cuenta con un
-dominio propio. Con un dominio, el certificado se resolvería con Let's Encrypt y
-certbot sobre el mismo nginx.
+- [Aplicación](http://20.80.47.160)
+- [GitHub Project](https://github.com/users/ILUMINX89/projects/2)
+- [Repositorio](https://github.com/ILUMINX89/Sound_pass)
+- [GitHub Actions](https://github.com/ILUMINX89/Sound_pass/actions)
+- [Pull requests](https://github.com/ILUMINX89/Sound_pass/pulls?q=is%3Apr)
+- [Guía de contribución](CONTRIBUTING.md)
+- [Bitácora de errores](docs/bitacora.md)

@@ -6,7 +6,14 @@ from sqlalchemy.orm import Session, joinedload
 
 from src import models, schemas
 from src.database import get_db
-from src.spotify import get_artist_image
+from src.spotify import (
+    SpotifyArtistError,
+    get_artist_gallery,
+    get_artist_player,
+)
+
+from fastapi.responses import JSONResponse
+from src.wikipedia import get_artist_bio, WikipediaUnavailableError
 
 router = APIRouter(prefix="/concerts", tags=["concerts"])
 
@@ -46,43 +53,14 @@ def list_concerts(
 
     results = []
 
-    database_changed = False
-
     for c in concerts:
-
-        # ----------------------------------------------------
-        # IMAGEN DEL ARTISTA
-        # ----------------------------------------------------
-        #
-        # Si no existe imagen o tiene una ruta local vieja
-        # como /images/shakira.jpg, buscarla en Spotify.
-        #
-        needs_spotify_image = (
-            not c.image_url
-            or c.image_url.startswith("/images/")
-            or c.image_url.startswith("images/")
-        )
-
-        if needs_spotify_image:
-            print(f"Buscando imagen de " f"{c.artist} en Spotify...")
-
-            image = get_artist_image(c.artist)
-
-            if image:
-                print(f"Imagen encontrada para " f"{c.artist}: {image}")
-
-                c.image_url = image
-
-                database_changed = True
-
-            else:
-                print(f"No se encontró imagen " f"para {c.artist}")
 
         # ----------------------------------------------------
         # PRECIO MÁS BAJO DEL CONCIERTO
         # ----------------------------------------------------
 
         price_from = min((t.price for t in c.ticket_types), default=0)
+        tickets_available = sum(t.quantity_available for t in c.ticket_types)
 
         # ----------------------------------------------------
         # RESPUESTA DEL CONCIERTO
@@ -99,12 +77,9 @@ def list_concerts(
                 image_url=c.image_url,
                 venue=c.venue,
                 price_from=price_from,
+                tickets_available=tickets_available,
             )
         )
-
-    # Guardar las imágenes encontradas en PostgreSQL
-    if database_changed:
-        db.commit()
 
     # --------------------------------------------------------
     # ORDENAMIENTO
@@ -141,27 +116,6 @@ def get_concert(concert_id: int, db: Session = Depends(get_db)):
     if not concert:
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
-    # Si tiene una imagen local vieja,
-    # intentar reemplazarla también aquí.
-    needs_spotify_image = (
-        not concert.image_url
-        or concert.image_url.startswith("/images/")
-        or concert.image_url.startswith("images/")
-    )
-
-    if needs_spotify_image:
-        print(f"Buscando imagen de " f"{concert.artist} en Spotify...")
-
-        image = get_artist_image(concert.artist)
-
-        if image:
-            concert.image_url = image
-
-            db.commit()
-            db.refresh(concert)
-
-            print(f"Imagen encontrada para " f"{concert.artist}: {image}")
-
     return concert
 
 
@@ -178,16 +132,6 @@ def create_concert(payload: schemas.ConcertCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Recinto no encontrado")
 
     concert = models.Concert(**payload.model_dump())
-
-    # Si no se envía una imagen,
-    # buscar automáticamente en Spotify.
-    if not concert.image_url:
-        print(f"Buscando imagen de " f"{concert.artist} en Spotify...")
-
-        image = get_artist_image(concert.artist)
-
-        if image:
-            concert.image_url = image
 
     db.add(concert)
 
@@ -221,21 +165,6 @@ def update_concert(
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(concert, field, value)
-
-    # Si se cambió el artista o la imagen está vacía/local,
-    # volver a intentar obtener imagen de Spotify.
-    needs_spotify_image = (
-        not concert.image_url
-        or concert.image_url.startswith("/images/")
-        or concert.image_url.startswith("images/")
-    )
-
-    if needs_spotify_image:
-
-        image = get_artist_image(concert.artist)
-
-        if image:
-            concert.image_url = image
 
     db.commit()
 
@@ -281,3 +210,249 @@ def get_concert_ticket_types(concert_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
     return concert.ticket_types
+
+# ============================================================
+# BIOGRAFÍA DEL ARTISTA — WIKIPEDIA
+# ============================================================
+
+
+@router.get(
+    "/{concert_id}/artist-bio",
+    response_model=schemas.ArtistBioOut,
+    summary="Consultar biografía del artista desde Wikipedia",
+    responses={
+        404: {"description": "Concierto no encontrado"},
+        503: {
+            "model": schemas.ArtistBioOut,
+            "description": "Wikipedia no está disponible",
+        },
+    },
+)
+def get_concert_artist_bio(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    """Obtiene una biografía breve en español y el enlace a su fuente.
+
+    Puede devolver los estados ok, not_found o ambiguous.
+    Si el proveedor falla, devuelve HTTP 503 y estado unavailable.
+    """
+    concert = db.get(models.Concert, concert_id)
+
+    if concert is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Concierto no encontrado",
+        )
+
+    try:
+        result = get_artist_bio(concert.artist)
+    except WikipediaUnavailableError:
+        payload = schemas.ArtistBioOut(
+            concert_id=concert.id,
+            artist=concert.artist,
+            status="unavailable",
+        )
+        return JSONResponse(
+            status_code=503,
+            content=payload.model_dump(mode="json"),
+        )
+
+    return schemas.ArtistBioOut(
+        concert_id=concert.id,
+        artist=concert.artist,
+        **result,
+    )
+
+
+
+# ============================================================
+# REPRODUCTOR OFICIAL DE SPOTIFY
+# ============================================================
+
+@router.get(
+    "/{concert_id}/spotify",
+    response_model=schemas.ConcertSpotifyOut,
+    summary="Consultar el reproductor de Spotify del artista",
+    responses={
+        404: {
+            "description": "Concierto inexistente",
+            "model": schemas.SpotifyErrorOut,
+        },
+        502: {
+            "description": "Respuesta inválida de Spotify",
+            "model": schemas.SpotifyErrorOut,
+        },
+        503: {
+            "description": (
+                "Spotify sin configurar, acceso rechazado, "
+                "límite de consultas o servicio no disponible"
+            ),
+            "model": schemas.SpotifyErrorOut,
+        },
+    },
+)
+def get_concert_spotify(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    row = (
+        db.query(models.Concert.artist)
+        .filter(models.Concert.id == concert_id)
+        .first()
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "concert_not_found",
+                "message": "Concierto no encontrado.",
+            },
+        )
+
+    artist_name = row[0] or ""
+
+    # Termina la lectura y libera la conexión antes de consultar Spotify.
+    db.rollback()
+
+    try:
+        result = get_artist_player(artist_name)
+
+    except SpotifyArtistError as error:
+        headers = None
+
+        if error.retry_after is not None:
+            headers = {"Retry-After": error.retry_after}
+
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={
+                "code": error.code,
+                "message": error.message,
+            },
+            headers=headers,
+        ) from None
+
+    return {
+        "concert_id": concert_id,
+        **result,
+    }
+
+
+# ============================================================
+# GALERÍA DEL ARTISTA — SPOTIFY
+# ============================================================
+
+@router.get(
+    "/{concert_id}/artist-gallery",
+    response_model=schemas.ConcertArtistGalleryOut,
+    summary="Consultar imágenes del artista desde Spotify",
+    responses={
+        404: {
+            "description": "Concierto inexistente",
+            "model": schemas.SpotifyErrorOut,
+        },
+        502: {
+            "description": "Respuesta inválida de Spotify",
+            "model": schemas.SpotifyErrorOut,
+        },
+        503: {
+            "description": (
+                "Spotify sin configurar, acceso rechazado, "
+                "límite de consultas o servicio no disponible"
+            ),
+            "model": schemas.SpotifyErrorOut,
+        },
+    },
+)
+def get_concert_artist_gallery(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    """Devuelve imágenes que pueden ser la misma foto en distintos tamaños."""
+    row = (
+        db.query(models.Concert.artist)
+        .filter(models.Concert.id == concert_id)
+        .first()
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "concert_not_found",
+                "message": "Concierto no encontrado.",
+            },
+        )
+
+    artist_name = row[0] or ""
+
+    # Libera la conexión antes de consultar el servicio externo.
+    db.rollback()
+
+    try:
+        result = get_artist_gallery(artist_name)
+    except SpotifyArtistError as error:
+        headers = (
+            {"Retry-After": error.retry_after}
+            if error.retry_after is not None
+            else None
+        )
+
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={
+                "code": error.code,
+                "message": error.message,
+            },
+            headers=headers,
+        ) from None
+
+    return {
+        "concert_id": concert_id,
+        **result,
+    }
+
+
+# Ticketmaster — próximos conciertos del artista
+@router.get(
+    "/{concert_id}/upcoming-events",
+    response_model=schemas.ConcertUpcomingEventsOut,
+    summary="Consultar próximos conciertos del artista en Ticketmaster",
+)
+def get_concert_upcoming_events(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    from src.ticketmaster import TicketmasterError, get_artist_upcoming_events
+
+    row = (
+        db.query(models.Concert.artist)
+        .filter(models.Concert.id == concert_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "concert_not_found",
+                "message": "Concierto no encontrado.",
+            },
+        )
+
+    artist = row[0] or ""
+    db.rollback()
+
+    try:
+        result = get_artist_upcoming_events(artist)
+    except TicketmasterError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={
+                "code": error.code,
+                "message": error.message,
+            },
+        ) from None
+
+    return {"concert_id": concert_id, **result}
