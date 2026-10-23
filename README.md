@@ -21,6 +21,8 @@ Actividad de la asignatura **Desarrollo de aplicaciones en la nube**, Fundación
 - [Equipo de Desarrollo](#equipo-de-desarrollo)
 - [Descripción del Proyecto](#descripción-del-proyecto)
 - [Arquitectura](#arquitectura)
+- [Modelo entidad–relación](#modelo-entidadrelación)
+- [Modelo vista–controlador del proyecto](#modelo-vistacontrolador-del-proyecto)
 - [Metodología](#metodología)
 - [Sprints e historias](#sprints-e-historias)
 - [Automatización con GitHub Actions](#automatización-con-github-actions)
@@ -107,6 +109,165 @@ Decisiones de diseño:
 4. **Puertos según el entorno.** El Compose versionado publica 8000 y 5432 en el host. En la VM se deben restringir mediante firewall y configuración de red; el repositorio por sí solo no demuestra qué puertos son accesibles desde internet.
 
 ---
+
+
+## Modelo entidad–relación
+
+El siguiente diagrama representa las siete tablas de PostgreSQL definidas en `database/schema.sql`, la migración de boletas y sus correspondencias en `backend/src/models.py`.
+
+```mermaid
+erDiagram
+    direction TB
+    users ||--o{ orders : realiza
+    venues ||--o{ concerts : aloja
+    concerts ||--o{ ticket_types : ofrece
+    concerts ||--o{ orders : recibe
+    orders ||--o{ order_items : contiene
+    ticket_types ||--o{ order_items : clasifica
+    order_items ||--o{ issued_tickets : genera
+
+    users {
+        integer id PK
+        varchar full_name
+        varchar email UK
+        varchar password_hash
+        timestamptz created_at
+    }
+    venues {
+        integer id PK
+        varchar name
+        varchar city
+        varchar address
+        integer capacity
+    }
+    concerts {
+        integer id PK
+        varchar artist
+        varchar tour_name
+        varchar genre
+        integer venue_id FK
+        date event_date
+        time event_time
+        text description
+        varchar image_url
+        timestamptz created_at
+    }
+    ticket_types {
+        integer id PK
+        integer concert_id FK
+        varchar name
+        numeric price
+        integer quantity_available
+    }
+    orders {
+        integer id PK
+        varchar order_code UK
+        integer user_id FK
+        integer concert_id FK
+        varchar status
+        varchar payment_method
+        numeric subtotal
+        numeric service_fee
+        numeric total
+        timestamptz created_at
+        timestamptz cancelled_at
+    }
+    order_items {
+        integer id PK
+        integer order_id FK
+        integer ticket_type_id FK
+        integer quantity
+        numeric unit_price
+    }
+    issued_tickets {
+        integer id PK
+        integer order_item_id FK
+        integer sequence_number
+        varchar public_code UK
+        timestamptz created_at
+    }
+```
+
+**Notación:** `PK` identifica una clave primaria, `FK` una clave foránea y `UK` un valor único. `||--o{` significa que cada registro hijo pertenece a exactamente un padre y el padre puede tener cero o muchos hijos.
+
+| Relación | Cardinalidad | Interpretación |
+|---|---|---|
+| Usuario → órdenes | 1:N | Cada orden pertenece a un usuario; una cuenta puede no tener compras |
+| Recinto → conciertos | 1:N | Cada concierto se realiza en un recinto |
+| Concierto → tipos de boleta | 1:N | Un concierto ofrece categorías con precio e inventario propios |
+| Concierto → órdenes | 1:N | Cada orden corresponde a un único concierto |
+| Orden → ítems | 1:N | Cada ítem pertenece a una orden y registra cantidad y precio unitario |
+| Tipo de boleta → ítems | 1:N | Una categoría puede aparecer en varias compras |
+| Ítem → boletas emitidas | 1:N | Cada entrada individual emitida pertenece a un ítem de compra |
+
+El diagrama muestra la cardinalidad admitida por las claves foráneas. En el flujo de compra, la orden se crea con sus ítems; las boletas individuales se generan en la primera descarga del PDF. Por eso un ítem puede existir sin registros en `issued_tickets` hasta ese momento.
+
+### Restricciones y reglas del modelo
+
+- `users.email`, `orders.order_code` e `issued_tickets.public_code` son únicos.
+- El esquema SQL impide repetir la combinación `(concert_id, name)` en `ticket_types`.
+- `issued_tickets` impide repetir `(order_item_id, sequence_number)`, y el consecutivo debe ser mayor que cero.
+- Las cantidades compradas deben ser positivas; el esquema SQL exige precios e inventario no negativos.
+- Una orden tiene estado `confirmed` o `cancelled`, y admite los métodos `card`, `pse` y `nequi`.
+- El backend comprueba que los tipos de boleta comprados pertenezcan al concierto de la orden. Las claves foráneas, por separado, no expresan esa regla entre tablas.
+- `order_items.unit_price` conserva el precio unitario de la compra, mientras `ticket_types.price` representa el precio del catálogo.
+- El artista se guarda como texto en `concerts.artist`; no existe una tabla independiente de artistas. Spotify, Wikipedia y Ticketmaster son proveedores externos, no entidades persistidas como tablas propias.
+
+---
+
+## Modelo vista–controlador del proyecto
+
+SoundPass utiliza un **frontend separado que consume una API REST**. Sus responsabilidades pueden explicarse mediante Modelo–Vista–Controlador (MVC), con controladores HTTP en FastAPI y vistas renderizadas por JavaScript en el navegador. Es una correspondencia arquitectónica: el proyecto no utiliza un framework MVC con plantillas HTML renderizadas en el servidor.
+
+### Correspondencia con los archivos actuales
+
+| Capa o responsabilidad | Archivos | Función en SoundPass |
+|---|---|---|
+| Modelo | `backend/src/models.py` | Entidades SQLAlchemy, relaciones y restricciones del dominio |
+| Persistencia del modelo | `backend/src/database.py`, `database/schema.sql`, `database/migrations/` | Sesiones, conexión y estructura PostgreSQL |
+| Vista | `frontend/index.html`, `frontend/style.css` y funciones de renderizado de `frontend/script.js` | Pantallas, formularios, catálogo, órdenes y detalle del concierto |
+| Controlador HTTP | `backend/src/routers/auth.py`, `concerts.py`, `venues.py`, `orders.py`, `tickets.py` | Recibir solicitudes, validar permisos, ejecutar operaciones y devolver JSON o PDF |
+| Interacción de la vista | Eventos, estado y llamadas `fetch` en `frontend/script.js` | Responder a acciones del usuario, invocar la API y actualizar la pantalla |
+| Contratos de entrada y salida | `backend/src/schemas.py` | Validar y serializar datos mediante Pydantic |
+| Servicios auxiliares | `spotify.py`, `wikipedia.py`, `ticketmaster.py`, `ticket_pdf.py` | Consultar proveedores o generar documentos |
+| Seguridad y composición | `security.py`, `config.py`, `main.py` | JWT, configuración, registro de routers y middleware |
+
+`schemas.py` define contratos de la API y no sustituye las entidades persistentes de `models.py`. Actualmente los routers también contienen lógica de negocio y consultas SQLAlchemy; no existe una capa de servicios de negocio separada para todas las operaciones. Asimismo, `script.js` reúne interacción, estado y renderizado de la vista.
+
+### Diagrama de responsabilidades
+
+```mermaid
+flowchart TB
+    V["Vista: HTML, CSS y JavaScript"]
+    C["Controladores: routers FastAPI"]
+    M["Modelo: entidades SQLAlchemy"]
+    D[("PostgreSQL")]
+    S["Servicios: proveedores y PDF"]
+    E["Spotify, Wikipedia y Ticketmaster"]
+
+    V -->|"Solicitud HTTP y JWT cuando aplica"| C
+    C -->|"JSON o archivo PDF"| V
+    C -->|"Consultas y operaciones"| M
+    M -->|"Persistencia mediante sesión"| D
+    C -->|"Información externa o documento"| S
+    S -->|"Consultas a proveedores"| E
+```
+
+El acceso del navegador pasa por nginx y el prefijo `/api` en el despliegue descrito. El proxy es infraestructura y no representa una capa MVC.
+
+### Ejemplo: compra y descarga de boletas
+
+1. **Vista:** el usuario selecciona concierto, categoría y cantidad; `script.js` envía `POST /orders` con el token.
+2. **Controlador:** `routers/orders.py` obtiene al usuario autenticado, comprueba el concierto y el inventario, calcula importes y coordina la transacción.
+3. **Modelo:** se guardan `orders` y `order_items`, y se actualiza la disponibilidad de `ticket_types`.
+4. **Vista:** la respuesta JSON permite presentar la compra y habilitar su descarga.
+5. **Controlador de descarga:** `routers/tickets.py` recibe `GET /orders/{order_id}/tickets/pdf`, comprueba propiedad y estado de la orden, y consulta o crea `issued_tickets`.
+6. **Servicio y vista:** `ticket_pdf.py` construye el PDF; el controlador lo devuelve y `script.js` inicia la descarga del archivo.
+
+Esta separación permite mantener la presentación en el frontend, las operaciones HTTP en los routers y los datos persistentes en el modelo, aunque algunas responsabilidades todavía compartan archivo.
+
+---
+
 
 ## Metodología
 
