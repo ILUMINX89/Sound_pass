@@ -1441,6 +1441,90 @@ input, select { font-family: inherit; }
 }
  
 /* ============================================================
+   GALERÍA DEL ARTISTA (Spotify)
+   Prefijo ga- para no chocar con otros selectores
+   ============================================================ */
+.ga { margin-top: 44px; }
+.ga[hidden] { display: none; }
+.ga-head { margin-bottom: 20px; }
+.ga-head h2 { font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.ga-head h2::before { content: ""; width: 5px; height: 24px; border-radius: 3px; background: var(--grad); }
+.ga-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 28px; padding: 20px; box-shadow: var(--shadow-card); }
+.ga-stage { display: flex; justify-content: center; align-items: center; min-height: 160px; border-radius: 18px; background: #121212; overflow: hidden; }
+.ga-main { display: block; width: auto; max-width: 100%; height: auto; max-height: min(560px, 70vh); object-fit: contain; }
+.ga-broken { margin: 0; padding: 40px 16px; font-size: 14px; color: var(--text-faint); text-align: center; }
+.ga-thumbs { list-style: none; margin: 14px 0 0; padding: 4px; display: flex; gap: 10px; overflow-x: auto; }
+.ga-thumb-item { flex: 0 0 auto; }
+.ga-thumb { display: block; width: 72px; height: 72px; padding: 0; border: 2px solid var(--border-soft); border-radius: 12px; background: #121212; overflow: hidden; cursor: pointer; opacity: .75; transition: opacity .15s ease, border-color .15s ease; }
+.ga-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ga-thumb:hover { opacity: 1; border-color: var(--wine-500); }
+.ga-thumb.is-selected { opacity: 1; border-color: var(--wine-400); }
+.ga-thumb:focus-visible, .ga-retry:focus-visible { outline: 2px solid var(--wine-400); outline-offset: 3px; }
+.ga-source { margin: 12px 0 0; font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
+ 
+/* Cargando (solo al reintentar) */
+.ga-card.is-loading .ga-status { margin: 12px 0 0; font-size: 13px; color: var(--text-faint); }
+.ga-skel { height: 220px; border-radius: 16px; background: linear-gradient(90deg, #1d1016 0%, #2a1620 50%, #1d1016 100%); background-size: 200% 100%; animation: dm-shimmer 1.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .ga-skel { animation: none; } .ga-thumb { transition: none; } }
+ 
+/* Error recuperable */
+.ga-card.is-notice { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 20px; background: var(--amber-bg); border: 1px dashed rgba(255, 196, 107, .35); }
+.ga-card.is-notice .ga-status { margin: 0; flex: 1 1 240px; font-size: 14px; line-height: 1.5; color: var(--text-dim); }
+.ga-retry { flex-shrink: 0; min-height: 44px; background: rgba(255, 255, 255, .04); color: var(--text); border: 1px solid var(--border); box-shadow: none; }
+.ga-retry:hover:not(:disabled) { background: rgba(240, 73, 106, .12); border-color: var(--wine-500); }
+.ga-retry:disabled { opacity: .55; cursor: not-allowed; }
+ 
+@media (max-width: 640px) {
+  .ga { margin-top: 36px; }
+  .ga-head h2 { font-size: 21px; }
+  .ga-card { border-radius: 22px; padding: 12px; }
+  .ga-card.is-notice { padding: 16px; }
+  .ga-thumb { width: 64px; height: 64px; }
+  .ga-retry { width: 100%; }
+}
+ 
+/* ============================================================
+   PRÓXIMOS CONCIERTOS DEL ARTISTA (Ticketmaster, informativo)
+   Prefijo ue- para no chocar con otros selectores
+   ============================================================ */
+.ue { margin-top: 44px; }
+.ue[hidden] { display: none; }
+.ue-head { margin-bottom: 20px; }
+.ue-head h2 { font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.ue-head h2::before { content: ""; width: 5px; height: 24px; border-radius: 3px; background: var(--grad); }
+.ue-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 28px; padding: 12px 28px 20px; box-shadow: var(--shadow-card); }
+.ue-list { list-style: none; margin: 0; padding: 0; }
+.ue-item { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 1.4fr); gap: 8px 24px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+.ue-item:last-child { border-bottom: 0; }
+.ue-when, .ue-where { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ue-date { font-family: var(--font-display); font-size: 16px; color: var(--text); }
+.ue-time { font-size: 13.5px; color: var(--wine-400); font-weight: 600; }
+.ue-venue { font-size: 15px; color: var(--text); font-weight: 600; }
+.ue-place { font-size: 13.5px; color: var(--text-dim); }
+.ue-date, .ue-venue, .ue-place { overflow-wrap: anywhere; }
+.ue-note { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-faint); }
+.ue-source { margin: 6px 0 0; font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
+ 
+/* Cargando */
+.ue-card.is-loading { padding: 20px 28px; }
+.ue-card.is-loading .ue-status { margin: 12px 0 0; font-size: 13px; color: var(--text-faint); }
+.ue-skel { height: 84px; border-radius: 16px; background: linear-gradient(90deg, #1d1016 0%, #2a1620 50%, #1d1016 100%); background-size: 200% 100%; animation: dm-shimmer 1.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .ue-skel { animation: none; } }
+ 
+/* Sin fechas / ambiguo / no disponible */
+.ue-card.is-notice { padding: 18px 20px; background: var(--amber-bg); border: 1px dashed rgba(255, 196, 107, .35); }
+.ue-card.is-notice .ue-status { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-dim); }
+ 
+@media (max-width: 640px) {
+  .ue { margin-top: 36px; }
+  .ue-head h2 { font-size: 21px; }
+  .ue-card { border-radius: 22px; padding: 6px 16px 16px; }
+  .ue-card.is-loading { padding: 16px; }
+  .ue-card.is-notice { padding: 16px; }
+  .ue-item { grid-template-columns: 1fr; gap: 10px; }
+}
+ 
+/* ============================================================
    HU-02 — RESPONSIVE
    Breakpoints: 1180 (laptop chico) · 980 (tableta) · 768 · 640 (móvil) · 400 (móvil chico)
    Sin JavaScript: el menú móvil es una segunda fila con scroll horizontal.
@@ -1732,4 +1816,43 @@ img, svg, video { max-width: 100%; }
 .ticket-option small.is-low { color: var(--amber); font-weight: 600; }
 .ticket-option small.is-out { color: var(--red); font-weight: 600; }
 @media (max-width: 400px) { .cs { font-size: 11px; padding: 3px 8px; } }
- 
+
+/* ============================================================
+   Galería del artista (Spotify) — miniaturas e imagen ampliada
+   ============================================================ */
+.ga { margin: 34px 0 0; }
+.ga[hidden] { display: none !important; }
+.ga-head { margin-bottom: 16px; }
+.ga-head h2 { margin: 0; font-family: var(--font-display, "Space Grotesk", sans-serif); font-size: clamp(22px, 2.4vw, 30px); line-height: 1.2; color: var(--text, #fff); }
+.ga-card { min-width: 0; padding: clamp(14px, 2.5vw, 24px); border: 1px solid var(--border, rgba(255,255,255,.1)); border-radius: 20px; background: var(--surface, rgba(255,255,255,.035)); }
+.ga-card.is-notice { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.ga-status { margin: 0; color: var(--text-muted, #aaa); font-size: 14px; line-height: 1.55; }
+.ga-retry { flex: 0 0 auto; }
+.ga-stage { display: grid; place-items: center; min-height: 180px; max-height: 620px; overflow: hidden; border-radius: 14px; background: rgba(0,0,0,.22); }
+.ga-main { display: block; width: auto; height: auto; max-width: 100%; max-height: min(68vh, 620px); object-fit: contain; border-radius: 12px; }
+.ga-broken { margin: 24px; color: var(--text-muted, #aaa); text-align: center; font-size: 14px; }
+.ga-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+.ga-thumb-item { flex: 0 0 auto; width: clamp(64px, 10vw, 104px); }
+.ga-thumb { display: block; width: 100%; height: clamp(64px, 10vw, 104px); padding: 3px; overflow: hidden; cursor: pointer; border: 1px solid var(--border, rgba(255,255,255,.16)); border-radius: 12px; background: rgba(255,255,255,.04); transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.ga-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.ga-thumb:hover { transform: translateY(-2px); border-color: var(--accent, #ff4f7b); }
+.ga-thumb.is-selected, .ga-thumb[aria-pressed="true"] { border-color: var(--accent, #ff4f7b); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #ff4f7b) 28%, transparent); }
+.ga-thumb:focus-visible, .ga-retry:focus-visible { outline: 2px solid var(--accent, #ff4f7b); outline-offset: 3px; }
+.ga-source { margin: 14px 0 0; color: var(--text-muted, #999); font-size: 12px; }
+.ga-card.is-loading { display: grid; gap: 12px; }
+.ga-skel { min-height: 180px; border-radius: 14px; background: linear-gradient(90deg, rgba(255,255,255,.035), rgba(255,255,255,.09), rgba(255,255,255,.035)); background-size: 200% 100%; animation: ga-shimmer 1.4s linear infinite; }
+@keyframes ga-shimmer { to { background-position: -200% 0; } }
+@media (max-width: 640px) {
+  .ga { margin-top: 26px; }
+  .ga-card { padding: 12px; border-radius: 16px; }
+  .ga-stage { min-height: 140px; }
+  .ga-main { max-height: 52vh; }
+  .ga-thumbs { gap: 8px; }
+  .ga-thumb-item { width: 68px; }
+  .ga-thumb { height: 68px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ga-thumb { transition: none; }
+  .ga-skel { animation: none; }
+}
+
