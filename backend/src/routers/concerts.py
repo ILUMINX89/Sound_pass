@@ -6,7 +6,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from src import models, schemas
 from src.database import get_db
-from src.spotify import get_artist_image
+from src.spotify import (
+    SpotifyArtistError,
+    get_artist_image,
+    get_artist_player,
+)
 
 router = APIRouter(prefix="/concerts", tags=["concerts"])
 
@@ -281,3 +285,77 @@ def get_concert_ticket_types(concert_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
     return concert.ticket_types
+
+
+# ============================================================
+# REPRODUCTOR OFICIAL DE SPOTIFY
+# ============================================================
+
+@router.get(
+    "/{concert_id}/spotify",
+    response_model=schemas.ConcertSpotifyOut,
+    summary="Consultar el reproductor de Spotify del artista",
+    responses={
+        404: {
+            "description": "Concierto inexistente",
+            "model": schemas.SpotifyErrorOut,
+        },
+        502: {
+            "description": "Respuesta inválida de Spotify",
+            "model": schemas.SpotifyErrorOut,
+        },
+        503: {
+            "description": (
+                "Spotify sin configurar, acceso rechazado, "
+                "límite de consultas o servicio no disponible"
+            ),
+            "model": schemas.SpotifyErrorOut,
+        },
+    },
+)
+def get_concert_spotify(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    row = (
+        db.query(models.Concert.artist)
+        .filter(models.Concert.id == concert_id)
+        .first()
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "concert_not_found",
+                "message": "Concierto no encontrado.",
+            },
+        )
+
+    artist_name = row[0] or ""
+
+    # Termina la lectura y libera la conexión antes de consultar Spotify.
+    db.rollback()
+
+    try:
+        result = get_artist_player(artist_name)
+
+    except SpotifyArtistError as error:
+        headers = None
+
+        if error.retry_after is not None:
+            headers = {"Retry-After": error.retry_after}
+
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={
+                "code": error.code,
+                "message": error.message,
+            },
+            headers=headers,
+        ) from None
+
+    return {
+        "concert_id": concert_id,
+        **result,
+    }

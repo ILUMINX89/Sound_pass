@@ -148,3 +148,172 @@ def get_artist_image(artist_name: str):
         print(f"Error buscando imagen de " f"{artist_name}: {error}")
 
     return None
+
+class SpotifyArtistError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        status_code: int = 503,
+        retry_after: str | None = None,
+    ):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.status_code = status_code
+        self.retry_after = retry_after
+
+
+def get_artist_player(artist_name: str):
+    import re
+    import unicodedata
+
+    def normalize(value: str):
+        return " ".join(
+            unicodedata.normalize("NFKC", value).casefold().split()
+        )
+
+    if (
+        not settings.spotify_client_id.strip()
+        or not settings.spotify_client_secret.strip()
+    ):
+        raise SpotifyArtistError(
+            "not_configured",
+            "La integración con Spotify no está configurada.",
+        )
+
+    name = artist_name.strip()
+
+    if not name:
+        return {
+            "status": "not_found",
+            "artist": None,
+            "message": "El concierto no tiene un artista registrado.",
+        }
+
+    token = get_spotify_token()
+
+    if not token:
+        raise SpotifyArtistError(
+            "authentication_failed",
+            "No fue posible obtener acceso a Spotify.",
+        )
+
+    query = urlencode({
+        "q": name,
+        "type": "artist",
+        "market": "CO",
+        "limit": 10,
+    })
+
+    request = Request(
+        "https://api.spotify.com/v1/search?" + query,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        with urlopen(request, timeout=10) as response:
+            result = json.loads(response.read().decode("utf-8"))
+
+    except HTTPError as error:
+        if error.code == 429:
+            retry_after = error.headers.get("Retry-After", "60")
+
+            if not retry_after.isdigit():
+                retry_after = "60"
+
+            raise SpotifyArtistError(
+                "rate_limited",
+                "Spotify limitó temporalmente las consultas.",
+                retry_after=retry_after,
+            ) from None
+
+        if error.code in (401, 403):
+            raise SpotifyArtistError(
+                "access_denied",
+                "Spotify rechazó el acceso. Revisa la configuración "
+                "y los permisos de la aplicación.",
+            ) from None
+
+        raise SpotifyArtistError(
+            "spotify_unavailable",
+            "Spotify no está disponible temporalmente.",
+        ) from None
+
+    except (URLError, TimeoutError, OSError):
+        raise SpotifyArtistError(
+            "spotify_unavailable",
+            "No fue posible conectar con Spotify.",
+        ) from None
+
+    except (ValueError, UnicodeError):
+        raise SpotifyArtistError(
+            "invalid_response",
+            "Spotify devolvió una respuesta inválida.",
+            status_code=502,
+        ) from None
+
+    try:
+        artists = result["artists"]["items"]
+
+        if not isinstance(artists, list):
+            raise ValueError()
+
+        matches = {}
+
+        for artist in artists:
+            if (
+                not isinstance(artist, dict)
+                or not isinstance(artist.get("name"), str)
+                or not isinstance(artist.get("id"), str)
+                or not re.fullmatch(
+                    r"[A-Za-z0-9]{22}", artist["id"]
+                )
+            ):
+                raise ValueError()
+
+            if normalize(artist["name"]) == normalize(name):
+                matches[artist["id"]] = artist
+
+    except (KeyError, TypeError, ValueError):
+        raise SpotifyArtistError(
+            "invalid_response",
+            "Spotify devolvió información de artistas inválida.",
+            status_code=502,
+        ) from None
+
+    if not matches:
+        return {
+            "status": "not_found",
+            "artist": None,
+            "message": "No se encontró una coincidencia exacta "
+            "del artista en Spotify.",
+        }
+
+    if len(matches) > 1:
+        return {
+            "status": "ambiguous",
+            "artist": None,
+            "message": "Hay varios artistas con ese nombre en Spotify.",
+        }
+
+    artist = next(iter(matches.values()))
+    artist_id = artist["id"]
+
+    return {
+        "status": "ok",
+        "artist": {
+            "id": artist_id,
+            "name": artist["name"],
+            "spotify_url": (
+                f"https://open.spotify.com/artist/{artist_id}"
+            ),
+            "embed_url": (
+                f"https://open.spotify.com/embed/artist/{artist_id}"
+            ),
+        },
+        "message": None,
+    }

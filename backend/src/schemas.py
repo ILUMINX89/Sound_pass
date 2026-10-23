@@ -152,3 +152,30 @@ class VenueCreate(BaseModel):
     city: str
     address: str | None = None
     capacity: int | None = None
+
+
+# ============================================================
+# Spotify — reproductor del artista
+# ============================================================
+
+class SpotifyArtistOut(BaseModel):
+    id: str
+    name: str
+    spotify_url: str
+    embed_url: str
+
+
+class ConcertSpotifyOut(BaseModel):
+    concert_id: int
+    status: Literal["ok", "not_found", "ambiguous"]
+    artist: SpotifyArtistOut | None = None
+    message: str | None = None
+
+
+class SpotifyErrorDetail(BaseModel):
+    code: str
+    message: str
+
+
+class SpotifyErrorOut(BaseModel):
+    detail: SpotifyErrorDetail
