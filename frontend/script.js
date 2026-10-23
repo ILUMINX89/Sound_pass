@@ -25,10 +25,11 @@ function art(c, className = "", extra = "") { const url = imageUrl(c?.image_url)
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) }; if (token()) headers.Authorization = `Bearer ${token()}`;
   let response; try { response = await fetch(API_URL + path, { ...options, headers }); } catch { throw new Error("No fue posible conectar con la API. Verifica que el backend esté activo."); }
-  const data = await response.json().catch(() => ({})); if (!response.ok) { const d = data.detail; throw new Error(typeof d === "string" && d ? d : typeof d?.message === "string" && d.message ? d.message : "No fue posible completar la solicitud."); } return data;
+  const data = await response.json().catch(() => ({})); if (!response.ok) { const d = data.detail, err = new Error(typeof d === "string" && d ? d : typeof d?.message === "string" && d.message ? d.message : "No fue posible completar la solicitud."); err.status = response.status; err.data = data; throw err; } return data;
 }
 function goTo(id) {
   if (id !== "detail" && typeof spotifyView !== "undefined" && spotifyView) spotifyClear();
+  if (id !== "detail" && typeof artistBioView !== "undefined" && artistBioView) artistBioClear();
   document.querySelectorAll("[data-screen]").forEach(el => el.classList.toggle("is-active", el.id === `screen-${id}`));
   document.querySelectorAll(".primary-nav__link[data-active-on]").forEach(el => el.classList.toggle("is-active", el.dataset.activeOn.split(",").includes(id)));
   if (id === "checkout") renderCheckout(); if (id === "mytickets") loadTickets(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -88,7 +89,7 @@ function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getEleme
 function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
  
 async function openConcert(id) {
-  spotifyClear();
+  spotifyClear(); loadArtistBio(Number(id)); // la biografía va por su cuenta: si Wikipedia falla, el detalle y la compra siguen igual
   state.selectedConcertId = Number(id); state.selectedConcert = null; state.selectedTicketTypeId = null; state.qty = 1; goTo("detail"); document.querySelector(".detail-title").textContent = "Cargando concierto..."; document.querySelector(".detail-sub").textContent = ""; document.getElementById("ticket-options").innerHTML = "";
   try { const c = await api(`/concerts/${id}`); state.selectedConcert = c; state.selectedTicketTypeId = (c.ticket_types.find(t => t.quantity_available > 0) || c.ticket_types[0])?.id ?? null; renderDetail(); } catch (error) { document.querySelector(".detail-title").textContent = "No fue posible cargar el concierto"; document.querySelector(".detail-sub").textContent = error.message; }
 }
@@ -194,3 +195,71 @@ async function loadSpotify(c, force = false) {
   }
 }
 document.addEventListener("click", e => { if (e.target.closest("[data-spotify-retry]")) loadSpotify(concert(), true); });
+ 
+/* ===== Sobre el artista: biografía desde Wikipedia (es) =====
+   GET /concerts/{id}/artist-bio  (misma base y mismo api() que el resto)
+   -> { concert_id, artist, status: "ok"|"not_found"|"ambiguous"|"unavailable", biography?, article_title?, article_url?, source }
+   HTTP 503 / unavailable -> aviso temporal con "Reintentar" · 404 -> concierto inexistente
+   Todo lo que viene de la API se inserta con textContent (nunca innerHTML).
+   Una respuesta solo se pinta si sigue siendo la del concierto abierto (req + id). */
+var artistBioView = { concertId: null, req: 0, controller: null, loading: false };
+const artistBioRoot = () => document.getElementById("artist-bio");
+const artistBioBody = () => document.getElementById("artist-bio-body");
+const ARTIST_BIO_MSG = {
+  loading: "Cargando información del artista…",
+  not_found: "No hay una biografía disponible para este artista.",
+  ambiguous: "No pudimos identificar con certeza la biografía de este artista.",
+  unavailable: "La información del artista no está disponible en este momento.",
+  concert_not_found: "No se encontró el concierto.",
+  error: "No se pudo cargar la información del artista."
+};
+function artistBioClear() {
+  artistBioView.req++; artistBioView.controller?.abort(); artistBioView.controller = null; artistBioView.concertId = null; artistBioView.loading = false;
+  const body = artistBioBody(), root = artistBioRoot(); if (body) { body.replaceChildren(); body.setAttribute("aria-busy", "false"); } if (root) root.hidden = true;
+}
+/* Solo https://es.wikipedia.org/wiki/... ; cualquier otra cosa devuelve null y no se muestra enlace */
+function wikipediaUrl(value) {
+  if (typeof value !== "string") return null;
+  try { const u = new URL(value.trim()); return u.protocol === "https:" && u.hostname === "es.wikipedia.org" && !u.port && !u.username && !u.password && u.pathname.startsWith("/wiki/") ? u.href : null; } catch { return null; }
+}
+function artistBioNode(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text !== undefined) el.textContent = text; return el; }
+function renderArtistBio(kind, opts = {}) {
+  const body = artistBioBody(); if (!body) return;
+  body.setAttribute("aria-busy", kind === "loading" ? "true" : "false"); body.replaceChildren();
+  if (kind === "loading") { body.append(artistBioNode("div", "ab-skel"), artistBioNode("p", "ab-status", ARTIST_BIO_MSG.loading)); body.classList.add("is-loading"); body.classList.remove("is-notice"); return; }
+  body.classList.remove("is-loading");
+  if (kind === "ok") {
+    body.classList.remove("is-notice"); body.append(artistBioNode("p", "ab-text", opts.biography));
+    if (opts.url) { const a = artistBioNode("a", "ab-source", "Fuente: Wikipedia · Leer más"); a.href = opts.url; a.target = "_blank"; a.rel = "noopener noreferrer"; const wrap = artistBioNode("p", "ab-source-row"); wrap.append(a); body.append(wrap); }
+    return;
+  }
+  body.classList.add("is-notice"); body.append(artistBioNode("p", "ab-status", opts.text));
+  if (opts.retry) { const b = artistBioNode("button", "btn btn--sm ab-retry", "Reintentar"); b.type = "button"; b.dataset.artistBioRetry = ""; body.append(b); }
+}
+async function loadArtistBio(id, force = false) {
+  const root = artistBioRoot(); if (!root || !Number.isInteger(id) || id <= 0) return;
+  if (!force && artistBioView.concertId === id) return; // ya cargada o en curso: sin peticiones duplicadas
+  if (force && artistBioView.loading) return;
+  artistBioClear(); artistBioView.concertId = id; artistBioView.loading = true;
+  const req = artistBioView.req, controller = artistBioView.controller = new AbortController(), current = () => req === artistBioView.req && state.selectedConcertId === id;
+  root.hidden = false; renderArtistBio("loading");
+  try {
+    const data = await api(`/concerts/${id}/artist-bio`, { signal: controller.signal });
+    if (!current()) return; // llegó tarde: el usuario ya está en otro concierto o salió del detalle
+    artistBioView.loading = false;
+    if (!data || typeof data !== "object" || Number(data.concert_id) !== id) return renderArtistBio("error", { text: ARTIST_BIO_MSG.error, retry: true });
+    const bio = typeof data.biography === "string" ? data.biography.trim() : "";
+    if (data.status === "ok") bio ? renderArtistBio("ok", { biography: bio, url: wikipediaUrl(data.article_url) }) : renderArtistBio("notice", { text: ARTIST_BIO_MSG.not_found });
+    else if (data.status === "not_found" || data.status === "ambiguous") renderArtistBio("notice", { text: ARTIST_BIO_MSG[data.status] });
+    else if (data.status === "unavailable") renderArtistBio("notice", { text: ARTIST_BIO_MSG.unavailable, retry: true });
+    else renderArtistBio("error", { text: ARTIST_BIO_MSG.error, retry: true });
+  } catch (error) {
+    if (error?.name === "AbortError" || !current()) return; // cancelar no es un error
+    artistBioView.loading = false;
+    if (error.status === 404) renderArtistBio("notice", { text: ARTIST_BIO_MSG.concert_not_found });
+    else if (error.status === 503 || error.data?.status === "unavailable") renderArtistBio("notice", { text: ARTIST_BIO_MSG.unavailable, retry: true });
+    else renderArtistBio("error", { text: ARTIST_BIO_MSG.error, retry: true });
+  }
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-artist-bio-retry]"); if (!b || b.disabled) return; b.disabled = true; loadArtistBio(state.selectedConcertId, true); });
+ 
