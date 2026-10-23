@@ -193,3 +193,26 @@ class SpotifyErrorDetail(BaseModel):
 
 class SpotifyErrorOut(BaseModel):
     detail: SpotifyErrorDetail
+
+
+# Ticketmaster — próximos conciertos del artista
+from datetime import date as EventDate, time as EventTime
+
+
+class UpcomingArtistEventOut(BaseModel):
+    id: str
+    date: EventDate
+    time: EventTime | None = None
+    timezone: str | None = None
+    city: str | None = None
+    country: str | None = None
+    venue: str | None = None
+
+
+class ConcertUpcomingEventsOut(BaseModel):
+    concert_id: int
+    artist: str
+    source: Literal["ticketmaster"]
+    status: Literal["ok", "not_found", "ambiguous", "no_events"]
+    events: list[UpcomingArtistEventOut]
+    message: str | None = None

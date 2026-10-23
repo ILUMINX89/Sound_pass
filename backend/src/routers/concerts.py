@@ -334,3 +334,46 @@ def get_concert_spotify(
         "concert_id": concert_id,
         **result,
     }
+
+
+# Ticketmaster — próximos conciertos del artista
+@router.get(
+    "/{concert_id}/upcoming-events",
+    response_model=schemas.ConcertUpcomingEventsOut,
+    summary="Consultar próximos conciertos del artista en Ticketmaster",
+)
+def get_concert_upcoming_events(
+    concert_id: int,
+    db: Session = Depends(get_db),
+):
+    from src.ticketmaster import TicketmasterError, get_artist_upcoming_events
+
+    row = (
+        db.query(models.Concert.artist)
+        .filter(models.Concert.id == concert_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "concert_not_found",
+                "message": "Concierto no encontrado.",
+            },
+        )
+
+    artist = row[0] or ""
+    db.rollback()
+
+    try:
+        result = get_artist_upcoming_events(artist)
+    except TicketmasterError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={
+                "code": error.code,
+                "message": error.message,
+            },
+        ) from None
+
+    return {"concert_id": concert_id, **result}
