@@ -1,0 +1,43 @@
+# Frontend: nginx con los archivos HTML/CSS/JS.
+# Su nginx también reenvía /api a la API (ver frontend/nginx.conf).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: soundpass-frontend
+  namespace: soundpass
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: soundpass-frontend }
+  template:
+    metadata:
+      labels: { app: soundpass-frontend }
+    spec:
+      imagePullSecrets:
+        - name: ghcr-cred
+      containers:
+        - name: frontend
+          image: ghcr.io/iluminx89/sound_pass-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 80 }
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: soundpass-frontend
+  namespace: soundpass
+spec:
+  selector: { app: soundpass-frontend }
+  ports:
+    - { name: http, port: 80, targetPort: http }

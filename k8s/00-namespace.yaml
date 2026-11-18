@@ -1,0 +1,5 @@
+# Espacio aparte para todos los recursos de la aplicación
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: soundpass

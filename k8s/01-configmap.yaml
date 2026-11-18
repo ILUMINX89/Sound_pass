@@ -1,0 +1,14 @@
+# Configuración NO sensible. Se inyecta como variables de entorno.
+# Las claves van en el Secret (secret.yaml), nunca aquí.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: soundpass-config
+  namespace: soundpass
+data:
+  # Base de datos (usuario y nombre, sin contraseña)
+  POSTGRES_USER: soundpass_user
+  POSTGRES_DB: soundpass
+  # API
+  ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+  ALLOWED_ORIGINS: http://soundpass.local,http://localhost:8080
