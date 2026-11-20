@@ -463,17 +463,13 @@ async function loadUpcomingEvents(id) {
 }
  
 
-/* ===== SoundPass AI (pantalla del asistente) =====
-   ESTADO: solo interfaz. Backend todavía no entrega el contrato del endpoint de IA.
-   Para conectarla basta completar AI_CONTRACT con lo que confirme backend (ruta, método,
-   cuerpo de la solicitud y campo de la respuesta). No hay nada más que tocar.
-   Mientras `path` sea null NO se envía nada y la pantalla lo avisa: no hay respuestas simuladas.
-   El texto del usuario y de la IA se inserta siempre con textContent (nunca innerHTML). */
+/* SoundPass AI usa el cliente autenticado de la aplicación.
+   Los mensajes se insertan como texto plano. */
 var AI_CONTRACT = {
-  path: null,                       // PENDIENTE: ruta confirmada por backend, p. ej. "/..." (sin /api)
+  path: "/assistant/chat",
   method: "POST",
-  body: message => ({}),            // PENDIENTE: devolver el objeto con los nombres de campo reales
-  reply: data => null               // PENDIENTE: devolver el texto de la respuesta (string) desde `data`
+  body: message => ({ message }),
+  reply: data => data.reply
 };
 const AI_MAX = 500;
 const AI_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>`;
@@ -515,7 +511,7 @@ async function askAssistant(message, signal) {
   return reply.trim();
 }
 function aiShowError(error) { // nunca se muestran errores internos del servidor
-  if (error?.status === 401) return aiNote("warn", "Tu sesión expiró. Inicia sesión de nuevo para usar el asistente.");
+  if (error?.status === 401) return aiNote("warn", "Inicia sesión para usar el asistente.");
   if (error?.status === 429) return aiNote("warn", "Hay muchas consultas en este momento. Espera un momento e inténtalo de nuevo.", true);
   if (error?.code === "invalid") return aiNote("warn", "Recibimos una respuesta que no pudimos mostrar. Inténtalo de nuevo.", true);
   aiNote("warn", "No pudimos obtener respuesta del asistente. Inténtalo de nuevo.", true);

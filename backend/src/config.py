@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     )
 
     ticketmaster_api_key: str = ""
+    ollama_base_url: str = ""
+    ollama_model: str = "qwen2.5:1.5b"
+    ollama_timeout_seconds: float = Field(default=55, gt=0, le=55)
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[1] / ".env", env_file_encoding="utf-8", extra="ignore", hide_input_in_errors=True
