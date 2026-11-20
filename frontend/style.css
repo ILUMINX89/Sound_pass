@@ -1193,6 +1193,8 @@ input, select { font-family: inherit; }
   transition: background .15s ease, color .15s ease, padding .15s ease;
 }
 .account-menu__item:hover { background: rgba(240, 73, 106, .1); color: #fff; padding-left: 16px; }
+a.account-menu__item { display: block; text-decoration: none; }
+a.account-menu__item[hidden] { display: none; }
 .account-menu__item--danger { color: var(--red); }
 .account-menu__item--danger:hover { background: var(--red-bg); color: var(--red); }
  

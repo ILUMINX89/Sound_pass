@@ -11,6 +11,11 @@
 INSERT INTO users (id, full_name, email, password_hash) VALUES
 (1, 'Camila Torres', 'camila.torres@example.com', '$2b$12$Als6Jvg1BSKnhAWzYGtDI.zBCPytBQe4Z1N1te5.iHEY1dVNkJzYW'),
 (2, 'Andrés Gómez',  'andres.gomez@example.com',  '$2b$12$Als6Jvg1BSKnhAWzYGtDI.zBCPytBQe4Z1N1te5.iHEY1dVNkJzYW');
+
+-- Administrador de DEMOSTRACIÓN (contraseña demo123, igual que los otros usuarios del seed).
+-- Solo para desarrollo: en un entorno real crea la cuenta con otra contraseña y promuévela con la migración 002.
+INSERT INTO users (id, full_name, email, password_hash, role) VALUES
+(3, 'Admin SoundPass', 'admin@soundpass.example', '$2b$12$Als6Jvg1BSKnhAWzYGtDI.zBCPytBQe4Z1N1te5.iHEY1dVNkJzYW', 'admin');
  
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
  

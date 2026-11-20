@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>SoundPass — Administración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="adm-body">
+
+  <header class="adm-top">
+    <div class="adm-top__inner">
+      <a class="adm-brand" href="index.html" aria-label="Ir a la tienda de SoundPass">
+        <span class="adm-brand__name">SoundPass</span><span class="adm-brand__tag">Admin</span>
+      </a>
+      <div class="adm-top__right" id="adm-user" hidden>
+        <span class="adm-user" id="adm-user-name"></span>
+        <a class="btn btn--outline btn--sm" href="index.html">Ir a la tienda</a>
+        <button class="btn btn--outline btn--sm" id="adm-logout" type="button">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="adm-main">
+
+    <!-- ===== Cargando ===== -->
+    <section class="adm-card adm-center" id="adm-loading" aria-live="polite">
+      <p>Verificando sesión…</p>
+    </section>
+
+    <!-- ===== Acceso (login o sin permisos) ===== -->
+    <section class="adm-card adm-gate" id="adm-gate" hidden>
+      <span class="adm-eyebrow">ÁREA RESTRINGIDA</span>
+      <h1 class="adm-title" id="adm-gate-title">Panel de administración</h1>
+      <p class="adm-sub" id="adm-gate-sub">Inicia sesión con una cuenta de administrador.</p>
+      <form id="adm-login" novalidate>
+        <div class="field"><label for="adm-email">Correo electrónico</label>
+          <input id="adm-email" name="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="adm-password">Contraseña</label>
+          <input id="adm-password" name="password" type="password" autocomplete="current-password" required></div>
+        <p class="adm-msg" id="adm-login-msg" role="alert"></p>
+        <button class="btn btn--primary btn--full" type="submit">Entrar</button>
+      </form>
+      <div class="adm-denied" id="adm-denied" hidden>
+        <p class="adm-msg is-error" id="adm-denied-msg"></p>
+        <div class="btn-row">
+          <a class="btn btn--primary" href="index.html">Ir a la tienda</a>
+          <button class="btn btn--outline" id="adm-denied-logout" type="button">Cambiar de cuenta</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Panel ===== -->
+    <section id="adm-panel" hidden>
+      <div class="adm-head">
+        <div>
+          <h1 class="adm-title">Panel de administración</h1>
+          <p class="adm-sub">Gestiona los conciertos y recintos de SoundPass.</p>
+        </div>
+      </div>
+
+      <p class="adm-banner is-error" id="adm-banner" role="alert" hidden></p>
+
+      <div class="adm-stats" aria-label="Resumen">
+        <div class="adm-stat"><span class="adm-stat__n" id="st-concerts">–</span><span class="adm-stat__l">Conciertos</span></div>
+        <div class="adm-stat"><span class="adm-stat__n" id="st-upcoming">–</span><span class="adm-stat__l">Próximos</span></div>
+        <div class="adm-stat"><span class="adm-stat__n" id="st-venues">–</span><span class="adm-stat__l">Recintos</span></div>
+        <div class="adm-stat"><span class="adm-stat__n" id="st-tickets">–</span><span class="adm-stat__l">Boletos disponibles</span></div>
+      </div>
+
+      <div class="adm-tabs" role="tablist">
+        <button class="adm-tab is-active" role="tab" id="tab-concerts" aria-selected="true" aria-controls="pane-concerts" data-tab="concerts" type="button">Conciertos</button>
+        <button class="adm-tab" role="tab" id="tab-venues" aria-selected="false" aria-controls="pane-venues" data-tab="venues" type="button">Recintos</button>
+      </div>
+
+      <!-- Conciertos -->
+      <div class="adm-card" id="pane-concerts" role="tabpanel" aria-labelledby="tab-concerts">
+        <div class="adm-toolbar">
+          <input class="adm-search" id="c-search" type="search" placeholder="Buscar artista, gira o ciudad" aria-label="Buscar conciertos">
+          <button class="btn btn--primary btn--sm" id="c-new" type="button">+ Nuevo concierto</button>
+        </div>
+        <div class="adm-tablewrap">
+          <table class="adm-table">
+            <thead><tr><th>Artista / gira</th><th>Recinto</th><th>Fecha</th><th class="num">Boletos</th><th class="act">Acciones</th></tr></thead>
+            <tbody id="c-body"></tbody>
+          </table>
+        </div>
+        <p class="adm-empty" id="c-empty" hidden></p>
+        <p class="adm-hint">Los tipos de boleto y su stock no se editan aquí: el backend no tiene endpoints para eso todavía.</p>
+      </div>
+
+      <!-- Recintos -->
+      <div class="adm-card" id="pane-venues" role="tabpanel" aria-labelledby="tab-venues" hidden>
+        <div class="adm-toolbar">
+          <span class="adm-toolbar__title">Recintos registrados</span>
+          <button class="btn btn--primary btn--sm" id="v-new" type="button">+ Nuevo recinto</button>
+        </div>
+        <div class="adm-tablewrap">
+          <table class="adm-table">
+            <thead><tr><th>Nombre</th><th>Ciudad</th><th>Dirección</th><th class="num">Capacidad</th><th class="act">Acciones</th></tr></thead>
+            <tbody id="v-body"></tbody>
+          </table>
+        </div>
+        <p class="adm-empty" id="v-empty" hidden></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="adm-toast" id="adm-toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- ===== Formulario de concierto ===== -->
+  <div class="modal-overlay" id="cm" hidden>
+    <div class="modal adm-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+      <button class="modal__close" id="cm-close" type="button" aria-label="Cerrar">×</button>
+      <h2 class="modal__title" id="cm-title">Nuevo concierto</h2>
+      <form id="cm-form" novalidate>
+        <div class="field"><label for="cm-artist">Artista</label><input id="cm-artist" name="artist" maxlength="150" required></div>
+        <div class="field"><label for="cm-tour">Gira o nombre del evento</label><input id="cm-tour" name="tour_name" maxlength="150" required></div>
+        <div class="field-row">
+          <div class="field"><label for="cm-genre">Género</label><input id="cm-genre" name="genre" maxlength="60" required></div>
+          <div class="field"><label for="cm-venue">Recinto</label><select id="cm-venue" name="venue_id" required></select></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="cm-date">Fecha</label><input id="cm-date" name="event_date" type="date" required></div>
+          <div class="field"><label for="cm-time">Hora</label><input id="cm-time" name="event_time" type="time" required></div>
+        </div>
+        <div class="field"><label for="cm-image">URL de la imagen (opcional)</label><input id="cm-image" name="image_url" type="text" inputmode="url" placeholder="https://… o /uploads/…"></div>
+        <div class="field"><label for="cm-desc">Descripción (opcional)</label><textarea id="cm-desc" name="description" rows="3" maxlength="1000"></textarea></div>
+        <p class="adm-msg is-error" id="cm-msg" role="alert"></p>
+        <div class="modal__actions">
+          <button class="btn btn--outline btn--full" id="cm-cancel" type="button">Cancelar</button>
+          <button class="btn btn--primary btn--full" id="cm-save" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Formulario de recinto ===== -->
+  <div class="modal-overlay" id="vm" hidden>
+    <div class="modal adm-modal" role="dialog" aria-modal="true" aria-labelledby="vm-title">
+      <button class="modal__close" id="vm-close" type="button" aria-label="Cerrar">×</button>
+      <h2 class="modal__title" id="vm-title">Nuevo recinto</h2>
+      <form id="vm-form" novalidate>
+        <div class="field"><label for="vm-name">Nombre</label><input id="vm-name" name="name" maxlength="150" required></div>
+        <div class="field-row">
+          <div class="field"><label for="vm-city">Ciudad</label><input id="vm-city" name="city" maxlength="100" required></div>
+          <div class="field"><label for="vm-cap">Capacidad (opcional)</label><input id="vm-cap" name="capacity" type="number" min="1" step="1"></div>
+        </div>
+        <div class="field"><label for="vm-addr">Dirección (opcional)</label><input id="vm-addr" name="address" maxlength="200"></div>
+        <p class="adm-msg is-error" id="vm-msg" role="alert"></p>
+        <div class="modal__actions">
+          <button class="btn btn--outline btn--full" id="vm-cancel" type="button">Cancelar</button>
+          <button class="btn btn--primary btn--full" id="vm-save" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Confirmar eliminación ===== -->
+  <div class="modal-overlay" id="dm" hidden>
+    <div class="modal adm-modal" role="alertdialog" aria-modal="true" aria-labelledby="dm-title" aria-describedby="dm-text">
+      <h2 class="modal__title" id="dm-title">Eliminar</h2>
+      <p class="modal__sub" id="dm-text"></p>
+      <p class="adm-msg is-error" id="dm-msg" role="alert"></p>
+      <div class="modal__actions">
+        <button class="btn btn--outline btn--full" id="dm-cancel" type="button">Cancelar</button>
+        <button class="btn btn--danger btn--full" id="dm-confirm" type="button">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+
+</html>

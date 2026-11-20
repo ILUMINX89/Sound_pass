@@ -19,6 +19,7 @@ class UserOut(BaseModel):
     id: int
     full_name: str
     email: EmailStr
+    role: Literal["customer", "admin"] = "customer"
 
 
 class Token(BaseModel):
