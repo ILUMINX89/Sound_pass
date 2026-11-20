@@ -132,3 +132,14 @@ Aquí registramos **cada vez que algo no funcionó** o tuvimos que tomar una dec
 **Quién:** @imaakro
 
 
+
+
+### Proyecto 3: Kubernetes y monitoreo
+
+| Fecha | Error | Causa | Solución | Pros y contras |
+|---|---|---|---|---|
+| 18 nov | `winget` no existe en el PC | Windows sin App Installer | Se descargaron Minikube y Helm a mano a `~/k8s-tools` y se agregó al PATH del usuario; `kubectl` ya venía con Docker Desktop | Pro: no requiere administrador. Contra: hay que actualizarlos a mano |
+| 18 nov | La página cargaba pero sin biografía, Spotify ni próximos conciertos | El Secret se creó con las claves de Spotify y Ticketmaster vacías | Se copiaron las claves desde el contenedor de la VM al `secret.yaml` sin mostrarlas y se reinició la API con `kubectl rollout restart` | Pro: las claves nunca pasan por el repo. Contra: un cambio en el Secret exige reiniciar los pods |
+| 18 nov | Las fotos de los artistas no salían | `seed.sql` guarda rutas `/images/*.jpg` que no existen | Script que busca la foto en Spotify y guarda el link en la base, corrido dentro del pod de la API | Pro: rápido. Contra: si se borra el disco de la base hay que correrlo otra vez; el arreglo de fondo es en el backend |
+| 18 nov | Project Automation en rojo | El token `PROJECT_TOKEN` venció el 12 de noviembre | Se regeneró el token y se actualizó el secreto; se volvieron a correr los jobs | Pro: arreglo de 2 minutos. Contra: depende del token de una persona; hay que anotar cuándo vence |
+| 19 nov | `/api/metrics` respondía `Not Found` | Se probó antes de que terminaran de reiniciar los pods con la imagen nueva | Esperar a `kubectl rollout status deploy/soundpass-api -n soundpass` | Lección: después de un `rollout restart`, confirmar que terminó antes de probar |
