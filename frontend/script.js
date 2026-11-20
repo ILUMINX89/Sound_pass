@@ -25,12 +25,13 @@ function art(c, className = "", extra = "") { const url = imageUrl(c?.image_url)
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) }; if (token()) headers.Authorization = `Bearer ${token()}`;
   let response; try { response = await fetch(API_URL + path, { ...options, headers }); } catch { throw new Error("No fue posible conectar con la API. Verifica que el backend esté activo."); }
-  const data = await response.json().catch(() => ({})); if (!response.ok) { const d = data.detail, err = new Error(typeof d === "string" && d ? d : typeof d?.message === "string" && d.message ? d.message : "No fue posible completar la solicitud."); err.status = response.status; err.data = data; throw err; } return data;
+  const data = await response.json().catch(() => ({})); if (!response.ok) { const d = data.detail, expired = response.status === 401 && token() && !path.startsWith("/auth/"), err = new Error(expired ? "Tu sesión expiró. Inicia sesión de nuevo." : typeof d === "string" && d ? d : typeof d?.message === "string" && d.message ? d.message : Array.isArray(d) ? "Revisa los datos ingresados." : "No fue posible completar la solicitud."); err.status = response.status; err.data = data; if (expired) sessionExpired(); throw err; } return data;
 }
 function goTo(id) {
   if (id !== "detail" && typeof spotifyView !== "undefined" && spotifyView) spotifyClear();
   if (id !== "detail" && typeof artistBioView !== "undefined" && artistBioView) artistBioClear();
   if (id !== "detail" && typeof upcomingView !== "undefined" && upcomingView) upcomingClear();
+  if (id !== "assistant" && typeof aiView !== "undefined" && aiView) aiLeave();
   document.querySelectorAll("[data-screen]").forEach(el => el.classList.toggle("is-active", el.id === `screen-${id}`));
   document.querySelectorAll(".primary-nav__link[data-active-on]").forEach(el => el.classList.toggle("is-active", el.dataset.activeOn.split(",").includes(id)));
   if (id === "checkout") renderCheckout(); if (id === "mytickets") loadTickets(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -105,11 +106,17 @@ function renderCheckout() {
 function renderSuccess() { const o = state.lastOrder; if (!o) return; document.getElementById("success-order").innerHTML = `<div class="order-card__head"><span>Orden #${esc(o.order_code)}</span><span class="order-card__date">${fmtDateTime(o.created_at)}</span></div><div class="summary-item">${art(o.concert, "thumb")}<div><p class="summary-item__title">${esc(o.concert.artist)}</p><p class="summary-item__sub">${esc(o.concert.tour_name)}</p><p class="summary-item__meta">${fmtDate(o.concert.event_date)} · ${fmtTime(o.concert.event_time)}</p><p class="summary-item__meta">${esc(venue(o.concert))}</p></div></div><div class="order-card__divider"></div><div class="order-card__row"><span>Boletos:</span><span>${o.items.map(i => `${i.quantity} × ${esc(i.ticket_type_name)}`).join(", ")}</span></div><div class="order-card__row"><span>Subtotal:</span><span>${fmtCOP(o.subtotal)}</span></div><div class="order-card__row"><span>Cargo por servicio:</span><span>${fmtCOP(o.service_fee)}</span></div><div class="order-card__row"><span>Estado:</span><span>${o.status === "confirmed" ? "Confirmada" : "Cancelada"}</span></div><div class="order-card__row order-card__row--total"><span>Total:</span><span>${fmtCOP(o.total)}</span></div>`; }
  
 function setAuthView(view) { const reg = view === "register"; document.getElementById("login-form").hidden = reg; document.getElementById("register-form").hidden = !reg; document.getElementById("auth-title").textContent = reg ? "Crea tu cuenta" : "Inicia sesión para continuar"; }
-function openAuth(next = null) { state.pendingScreen = next; setAuthView("login"); document.getElementById("auth-modal").hidden = false; document.getElementById("login-email").focus(); }
-function closeAuth() { document.getElementById("auth-modal").hidden = true; state.pendingScreen = null; }
+function resetAuthForms() { document.getElementById("login-form").reset(); document.getElementById("register-form").reset(); message("login-message", "", false); message("register-message", "", false); }
+function openAuth(next = null) { resetAuthForms(); state.pendingScreen = next; setAuthView("login"); document.getElementById("auth-modal").hidden = false; document.getElementById("login-email").focus(); }
+function closeAuth() { document.getElementById("auth-modal").hidden = true; state.pendingScreen = null; resetAuthForms(); }
+function sessionExpired() { // el servidor rechazó el token (401): limpiar la sesión y pedir login sin perder la pantalla actual
+  localStorage.removeItem("soundpass_token"); state.currentUser = null; renderAccount();
+  const screen = document.querySelector("[data-screen].is-active")?.id.replace("screen-", ""); openAuth(["mytickets", "checkout"].includes(screen) ? screen : null);
+  message("login-message", "Tu sesión expiró. Inicia sesión de nuevo.");
+}
 function message(id, text, error = true) { const el = document.getElementById(id); el.textContent = text; el.classList.toggle("is-error", error); }
 function renderAccount() { const b = document.getElementById("account-button"), logged = Boolean(state.currentUser); b.classList.toggle("is-signed-in", logged); b.title = logged ? `Cuenta de ${state.currentUser.full_name}` : "Iniciar sesión"; b.setAttribute("aria-label", b.title); if (logged) document.getElementById("account-greeting").textContent = `Hola, ${state.currentUser.full_name}`; }
-async function restoreSession() { if (!token()) return; try { state.currentUser = await api("/auth/me"); renderAccount(); } catch { localStorage.removeItem("soundpass_token"); } }
+async function restoreSession() { if (!token()) return; try { state.currentUser = await api("/auth/me"); renderAccount(); } catch (error) { if (error.status === 401) localStorage.removeItem("soundpass_token"); } }
 async function loadTickets() { if (!token()) return openAuth("mytickets"); const list = document.getElementById("ticket-list"); list.innerHTML = `<div class="empty-state"><p>Cargando tus boletos...</p></div>`; try { TICKETS = await api("/orders/me"); renderTickets(); } catch (error) { list.innerHTML = `<div class="empty-state"><p>${esc(error.message)}</p></div>`; } }
 function renderTickets() { const now = new Date(), rows = TICKETS.filter(o => state.activeTicketTab === "proximos" ? o.status === "confirmed" && new Date(`${o.concert.event_date}T23:59:59`) >= now : o.status === "cancelled" || new Date(`${o.concert.event_date}T23:59:59`) < now), list = document.getElementById("ticket-list"); if (!rows.length) { list.innerHTML = `<div class="empty-state"><h3>No hay boletos en esta sección</h3><p>Explora los conciertos y encuentra tu próxima experiencia en vivo.</p><button class="btn btn--primary" data-nav="listing">Ver conciertos</button></div>`; return; } list.innerHTML = rows.map(o => { const c = o.concert, q = o.items.reduce((s, i) => s + i.quantity, 0), cancelled = o.status === "cancelled"; return `<article class="ticket-card">${art(c, "ticket-card__art")}<div class="ticket-card__body"><p class="ticket-card__title">${esc(c.artist)}</p><p class="ticket-card__sub">${esc(c.tour_name)}</p><div class="ticket-card__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div><div class="ticket-card__foot"><span>${q} boleto${q === 1 ? "" : "s"}</span><span>${o.items.map(i => esc(i.ticket_type_name)).join(", ")}</span><span>Orden #${esc(o.order_code)}</span></div></div><div class="ticket-card__actions"><span class="badge ${cancelled ? "badge--cancelled" : "badge--confirmed"}">${cancelled ? "Cancelado" : "Confirmado"}</span><button class="btn btn--outline btn--sm" data-order-detail="${o.id}">Ver detalle</button>${cancelled ? "" : `<button class="btn btn--danger-outline btn--sm" data-cancel-order="${o.id}">Cancelar compra</button>`}</div></article>`; }).join(""); }
 function openCancelModal(id) { const o = TICKETS.find(x => x.id === Number(id)); if (!o) return; state.orderToCancel = o; const q = o.items.reduce((s, i) => s + i.quantity, 0); document.getElementById("cancel-ticket").innerHTML = `${art(o.concert, "thumb")}<div><p class="summary-item__title">${esc(o.concert.artist)}</p><p class="summary-item__meta">${fmtDate(o.concert.event_date)} · ${esc(o.concert.venue.name)}</p><p class="summary-item__meta">${q} boleto${q === 1 ? "" : "s"} · ${o.items.map(i => esc(i.ticket_type_name)).join(", ")}</p></div>`; document.getElementById("cancel-modal").hidden = false; }
@@ -120,8 +127,8 @@ document.getElementById("f-city").onchange = e => { state.filters.city = e.targe
 document.getElementById("account-button").onclick = () => { if (!state.currentUser) return openAuth(); const m = document.getElementById("account-menu"); m.hidden = !m.hidden; }; document.getElementById("account-tickets").onclick = () => { document.getElementById("account-menu").hidden = true; goTo("mytickets"); }; document.getElementById("logout-button").onclick = () => { localStorage.removeItem("soundpass_token"); state.currentUser = null; document.getElementById("account-menu").hidden = true; renderAccount(); goTo("home"); }; document.addEventListener("click", e => { if (!e.target.closest(".topbar__right")) document.getElementById("account-menu").hidden = true; });
 document.getElementById("auth-close").onclick = closeAuth; document.getElementById("auth-modal").onclick = e => { if (e.target.id === "auth-modal") closeAuth(); }; document.getElementById("qty-minus").onclick = () => { state.qty = Math.max(1, state.qty - 1); renderDetail(); }; document.getElementById("qty-plus").onclick = () => { state.qty = Math.min(10, ticketType()?.quantity_available || 1, state.qty + 1); renderDetail(); }; document.querySelector('[data-nav="checkout"]').onclick = e => { e.preventDefault(); if (!ticketType()) return; token() ? goTo("checkout") : openAuth("checkout"); };
 document.querySelectorAll(".payment-option").forEach(o => o.onclick = () => { document.querySelectorAll(".payment-option").forEach(x => x.classList.remove("is-selected")); o.classList.add("is-selected"); o.querySelector("input").checked = true; });
-document.getElementById("login-form").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.currentTarget); try { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ email: f.get("email"), password: f.get("password") }) }); localStorage.setItem("soundpass_token", r.access_token); state.currentUser = await api("/auth/me"); renderAccount(); const next = state.pendingScreen; closeAuth(); if (next) goTo(next); } catch (err) { message("login-message", err.message); } };
-document.getElementById("register-form").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.currentTarget); try { await api("/auth/register", { method: "POST", body: JSON.stringify({ full_name: f.get("full_name"), email: f.get("email"), password: f.get("password") }) }); document.getElementById("login-email").value = f.get("email"); setAuthView("login"); message("login-message", "Cuenta creada. Ahora inicia sesión.", false); } catch (err) { message("register-message", err.message); } };
+document.getElementById("login-form").onsubmit = async e => { e.preventDefault(); const btn = e.currentTarget.querySelector("[type=submit]"); if (btn.disabled) return; btn.disabled = true; message("login-message", "", false); const f = new FormData(e.currentTarget); try { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ email: f.get("email"), password: f.get("password") }) }); localStorage.setItem("soundpass_token", r.access_token); state.currentUser = await api("/auth/me"); renderAccount(); const next = state.pendingScreen; closeAuth(); if (next) goTo(next); } catch (err) { message("login-message", err.message); } finally { btn.disabled = false; } };
+document.getElementById("register-form").onsubmit = async e => { e.preventDefault(); const btn = e.currentTarget.querySelector("[type=submit]"); if (btn.disabled) return; btn.disabled = true; message("register-message", "", false); const f = new FormData(e.currentTarget); try { await api("/auth/register", { method: "POST", body: JSON.stringify({ full_name: f.get("full_name"), email: f.get("email"), password: f.get("password") }) }); document.getElementById("login-email").value = f.get("email"); setAuthView("login"); message("login-message", "Cuenta creada. Ahora inicia sesión.", false); } catch (err) { message("register-message", err.message); } finally { btn.disabled = false; } };
 document.getElementById("pay-button").onclick = async () => { if (!token()) return openAuth("checkout"); const b = document.getElementById("pay-button"), c = concert(), t = ticketType(), text = document.querySelector(".payment-option.is-selected").textContent, payment = text.includes("PSE") ? "pse" : text.includes("Nequi") ? "nequi" : "card"; b.disabled = true; document.getElementById("pay-button-label").textContent = "Procesando compra…"; try { state.lastOrder = await api("/orders", { method: "POST", body: JSON.stringify({ concert_id: c.id, payment_method: payment, items: [{ ticket_type_id: t.id, quantity: state.qty }] }) }); renderSuccess(); goTo("success"); } catch (err) { alert(err.message); } finally { b.disabled = false; renderCheckout(); } };
 // HU-48: authenticated PDF ticket download.
 document.getElementById("download-receipt").onclick = async function () {
@@ -455,3 +462,92 @@ async function loadUpcomingEvents(id) {
   }
 }
  
+
+/* ===== SoundPass AI (pantalla del asistente) =====
+   ESTADO: solo interfaz. Backend todavía no entrega el contrato del endpoint de IA.
+   Para conectarla basta completar AI_CONTRACT con lo que confirme backend (ruta, método,
+   cuerpo de la solicitud y campo de la respuesta). No hay nada más que tocar.
+   Mientras `path` sea null NO se envía nada y la pantalla lo avisa: no hay respuestas simuladas.
+   El texto del usuario y de la IA se inserta siempre con textContent (nunca innerHTML). */
+var AI_CONTRACT = {
+  path: null,                       // PENDIENTE: ruta confirmada por backend, p. ej. "/..." (sin /api)
+  method: "POST",
+  body: message => ({}),            // PENDIENTE: devolver el objeto con los nombres de campo reales
+  reply: data => null               // PENDIENTE: devolver el texto de la respuesta (string) desde `data`
+};
+const AI_MAX = 500;
+const AI_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>`;
+var aiView = { pending: false, controller: null, req: 0, last: "", started: false };
+const aiEl = id => document.getElementById(id);
+const aiMk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+const aiTime = () => new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+function aiAppend(node) { const log = aiEl("ai-log"); log.append(node); log.scrollTop = log.scrollHeight; return node; }
+function aiAddMessage(role, text) {
+  const row = aiMk("div", `ai-msg ai-msg--${role}`);
+  if (role === "bot") { const av = aiMk("span", "ai-avatar"); av.setAttribute("aria-hidden", "true"); av.innerHTML = AI_ICON; row.append(av); }
+  const col = aiMk("div", "ai-msg__col");
+  col.append(aiMk("div", "ai-msg__bubble", text), aiMk("span", "ai-msg__meta", `${role === "user" ? "Tú" : "SoundPass AI"} · ${aiTime()}`));
+  row.append(col); return aiAppend(row);
+}
+function aiNote(kind, text, retry = false) {
+  const n = aiMk("div", `ai-note ai-note--${kind}`); n.append(aiMk("p", "ai-note__text", text));
+  if (retry) { const b = aiMk("button", "btn btn--sm ai-note__retry", "Reintentar"); b.type = "button"; b.dataset.aiRetry = ""; n.append(b); }
+  return aiAppend(n);
+}
+function aiTyping() {
+  const row = aiMk("div", "ai-msg ai-msg--bot ai-typing"); const av = aiMk("span", "ai-avatar"); av.setAttribute("aria-hidden", "true"); av.innerHTML = AI_ICON;
+  const dots = aiMk("div", "ai-msg__bubble"); dots.setAttribute("aria-label", "SoundPass AI está escribiendo…"); dots.append(aiMk("i"), aiMk("i"), aiMk("i")); const col = aiMk("div", "ai-msg__col"); col.append(dots, aiMk("span", "ai-msg__meta", "Escribiendo…"));
+  row.append(av, col); return aiAppend(row);
+}
+function aiSync() {
+  const i = aiEl("ai-input"); aiEl("ai-send").disabled = aiView.pending || !i.value.trim();
+  aiEl("ai-count").textContent = `${i.value.length}/${AI_MAX}`; i.style.height = "auto"; i.style.height = Math.min(i.scrollHeight, 140) + "px";
+}
+function aiBusy(on) { aiEl("ai-log").setAttribute("aria-busy", String(on)); aiEl("ai-form").classList.toggle("is-busy", on); aiSync(); }
+function aiRenderStatus() {
+  const el = aiEl("ai-status"), ok = Boolean(AI_CONTRACT.path);
+  el.className = `ai-status ${ok ? "ai-status--ok" : "ai-status--pending"}`; el.textContent = ok ? "Asistente disponible" : "Interfaz lista · conexión con la IA pendiente";
+}
+async function askAssistant(message, signal) {
+  const data = await api(AI_CONTRACT.path, { method: AI_CONTRACT.method, body: JSON.stringify(AI_CONTRACT.body(message)), signal });
+  const reply = AI_CONTRACT.reply(data);
+  if (typeof reply !== "string" || !reply.trim()) { const e = new Error("invalid"); e.code = "invalid"; throw e; }
+  return reply.trim();
+}
+function aiShowError(error) { // nunca se muestran errores internos del servidor
+  if (error?.status === 401) return aiNote("warn", "Tu sesión expiró. Inicia sesión de nuevo para usar el asistente.");
+  if (error?.status === 429) return aiNote("warn", "Hay muchas consultas en este momento. Espera un momento e inténtalo de nuevo.", true);
+  if (error?.code === "invalid") return aiNote("warn", "Recibimos una respuesta que no pudimos mostrar. Inténtalo de nuevo.", true);
+  aiNote("warn", "No pudimos obtener respuesta del asistente. Inténtalo de nuevo.", true);
+}
+async function aiSend(raw, retry = false) {
+  const text = String(raw || "").trim(); if (!text || aiView.pending) return;
+  if (!retry) { aiAddMessage("user", text); aiView.last = text; }
+  if (!aiView.started) { aiView.started = true; aiEl("ai-suggest").hidden = true; }
+  if (!AI_CONTRACT.path) return aiNote("info", "SoundPass AI todavía no está conectado al servicio de IA. Esta pantalla es solo la interfaz: tu mensaje no se envió.");
+  const req = ++aiView.req; aiView.pending = true; aiView.controller = new AbortController(); aiBusy(true);
+  const typing = aiTyping();
+  try {
+    const reply = await askAssistant(text, aiView.controller.signal);
+    if (req !== aiView.req) return; // el usuario salió del chat: la respuesta tardía se descarta
+    typing.remove(); aiAddMessage("bot", reply);
+  } catch (error) {
+    if (req !== aiView.req || error?.name === "AbortError") return; // cancelar no es un error
+    typing.remove(); aiShowError(error);
+  } finally { if (req === aiView.req) { aiView.pending = false; aiView.controller = null; aiBusy(false); } }
+}
+function aiLeave() { // al salir del chat con una consulta en curso: cancelar y dejar la conversación coherente
+  if (!aiView.pending) return;
+  aiView.req++; aiView.controller?.abort(); aiView.controller = null; aiView.pending = false;
+  aiEl("ai-log").querySelector(".ai-typing")?.remove(); aiBusy(false);
+  aiNote("info", "Se canceló la consulta porque saliste del chat. Puedes volver a preguntar.");
+}
+(function aiInit() {
+  const input = aiEl("ai-input"), form = aiEl("ai-form"); if (!input || !form) return;
+  aiRenderStatus(); aiSync();
+  input.addEventListener("input", aiSync);
+  input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
+  form.addEventListener("submit", e => { e.preventDefault(); const v = input.value; if (!v.trim() || aiView.pending) return; input.value = ""; aiSync(); aiSend(v); });
+  aiEl("ai-suggest").addEventListener("click", e => { const b = e.target.closest("[data-ai-suggest]"); if (b) aiSend(b.dataset.aiSuggest); });
+  aiEl("ai-log").addEventListener("click", e => { const b = e.target.closest("[data-ai-retry]"); if (b && !aiView.pending) { b.closest(".ai-note").remove(); aiSend(aiView.last, true); } });
+})();
