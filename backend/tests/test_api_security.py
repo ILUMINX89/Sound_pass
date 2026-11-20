@@ -1,9 +1,10 @@
 """Pruebas aisladas: no conectan a la BD configurada ni a servicios externos."""
-import importlib
+import os
+import subprocess
+import sys
 import secrets
 import unittest
 from datetime import date, time, datetime, timedelta, timezone
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from jose import jwt
@@ -44,18 +45,28 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(Settings(**options, database_url='sqlite://').cors_origins, [])
 
     def test_documentation_profiles(self):
-        import src.main as main
-        try:
-            for env in ('local', 'test', 'staging', 'production'):
-                with patch.object(settings, 'app_env', env):
-                    module = importlib.reload(main)
-                    with TestClient(module.app) as client:
-                        for path in ('/docs', '/redoc', '/openapi.json'):
-                            self.assertEqual(client.get(path).status_code, 404 if env in ('staging', 'production') else 200)
-                        self.assertEqual(client.get('/health').status_code, 200)
-                        self.assertFalse(module.app.debug)
-        finally:
-            importlib.reload(main)
+        # Cada arranque tiene su propio registro de métricas de Prometheus.
+        code = """
+from fastapi.testclient import TestClient
+from src.config import settings
+from src.main import app
+with TestClient(app) as client:
+    for path in ('/docs', '/redoc', '/openapi.json'):
+        assert client.get(path).status_code == (404 if settings.is_public else 200), path
+    assert client.get('/health').status_code == 200
+    assert client.get('/metrics').status_code == 200
+    assert not app.debug
+"""
+        for env in ('local', 'test', 'staging', 'production'):
+            with self.subTest(env=env):
+                result = subprocess.run(
+                    [sys.executable, '-c', code], capture_output=True, text=True,
+                    timeout=30, env=os.environ | {
+                        'APP_ENV': env, 'SECRET_KEY': secrets.token_urlsafe(48),
+                        'DATABASE_URL': 'sqlite://', 'ALLOWED_ORIGINS': '',
+                    },
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 class OwnershipTests(unittest.TestCase):

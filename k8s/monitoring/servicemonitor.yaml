@@ -1,0 +1,14 @@
+# Le dice a Prometheus: "lee /metrics de los Services con app: soundpass-api cada 15 s".
+# Prometheus encuentra así cada réplica de la API, incluso las que crea el HPA.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: soundpass-api
+  namespace: soundpass
+spec:
+  selector:
+    matchLabels: { app: soundpass-api }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

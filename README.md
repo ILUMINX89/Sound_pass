@@ -533,3 +533,139 @@ La configuración preparada para el perfil público, ejemplos de entorno y pasos
 pendientes con DevOps se describen en [docs/seguridad-api.md](docs/seguridad-api.md).
 Esa guía reemplaza las instrucciones anteriores de puertos públicos y configuración
 JWT de ejemplo: HTTPS y la topología real de la VM todavía deben verificarse.
+
+## Kubernetes y monitoreo (Proyecto 3)
+
+La aplicación corre en un clúster local de **Minikube**. La API tiene 2 réplicas (hasta 5 con autoescalado), PostgreSQL corre dentro del clúster con un disco persistente, y Prometheus y Grafana miden la API.
+
+### Arquitectura
+
+```
+Navegador ──> Ingress (soundpass.local) ──┬──> frontend (nginx)        namespace: soundpass
+                                          └──> /api ──> Service soundpass-api ──> 2 a 5 pods de la API
+                                                                                    │
+                                                         Service soundpass-db <─────┘
+                                                         PostgreSQL (StatefulSet + disco 1Gi)
+
+Prometheus ── lee /metrics de cada pod de la API cada 15 s ──> Grafana (dashboard SoundPass)
+                                                                    namespace: monitoring
+```
+
+| Archivo | Qué crea |
+|---|---|
+| `k8s/00-namespace.yaml` | Namespace `soundpass` |
+| `k8s/01-configmap.yaml` | Configuración no sensible (`ALLOWED_ORIGINS`, usuario y nombre de la base) |
+| `k8s/secret.example.yaml` | Plantilla del Secret (`DATABASE_URL`, `SECRET_KEY`, claves de Spotify y Ticketmaster). El real, `secret.yaml`, no se sube |
+| `k8s/10-postgres.yaml` | PostgreSQL: StatefulSet, disco de 1Gi y Service `soundpass-db` |
+| `k8s/20-api.yaml` | API: Deployment con 2 réplicas, probes en `/health`, requests/limits y Service |
+| `k8s/30-frontend.yaml` | Frontend (nginx) y su Service |
+| `k8s/40-ingress.yaml` | Ingress: `/` al frontend y `/api` a la API |
+| `k8s/50-hpa.yaml` | Autoescalado de 2 a 5 réplicas cuando la CPU pasa del 50 % |
+| `k8s/monitoring/` | Valores de Helm, ServiceMonitor y dashboard de Grafana |
+| `scripts/trafico.py` | Script para generar tráfico de prueba |
+
+### Requisitos
+
+- Docker Desktop
+- [Minikube](https://minikube.sigs.k8s.io/), `kubectl` y [Helm](https://helm.sh/)
+- 8 GB de RAM libres para el clúster
+
+### Imágenes
+
+El workflow **Imágenes (GHCR)** (`.github/workflows/images.yml`) construye y publica en cada push a `development`, `production` y `feature/**`:
+
+- `ghcr.io/iluminx89/sound_pass-api`
+- `ghcr.io/iluminx89/sound_pass-frontend`
+
+Para desarrollo local se pueden construir directamente dentro de Minikube:
+
+```powershell
+minikube image build -t ghcr.io/iluminx89/sound_pass-api:latest backend
+minikube image build -t ghcr.io/iluminx89/sound_pass-frontend:latest frontend
+```
+
+Para descargarlas de GHCR (repo privado) se crea una credencial con un token que tenga `read:packages`:
+
+```powershell
+kubectl create secret docker-registry ghcr-cred -n soundpass --docker-server=ghcr.io --docker-username=<usuario> --docker-password=<token>
+```
+
+### Desplegar la aplicación
+
+```powershell
+minikube start --driver=docker --cpus=4 --memory=6g
+minikube addons enable ingress
+minikube addons enable metrics-server
+
+# Claves: copiar la plantilla y llenar los valores reales
+Copy-Item k8s\secret.example.yaml k8s\secret.yaml
+
+# Scripts de la base de datos
+kubectl create namespace soundpass
+kubectl create configmap db-init -n soundpass --from-file=1-schema.sql=database/schema.sql --from-file=2-seed.sql=database/seed.sql
+
+# Todo lo demás
+kubectl apply -k k8s/
+kubectl get pods,svc -n soundpass
+```
+
+Abrir la aplicación:
+
+```powershell
+kubectl port-forward svc/soundpass-frontend 8080:80 -n soundpass
+```
+
+→ http://localhost:8080
+
+Con Ingress: dejar corriendo `minikube tunnel`, agregar `127.0.0.1 soundpass.local` a `C:\Windows\System32\drivers\etc\hosts` y abrir http://soundpass.local
+
+### Monitoreo con Prometheus y Grafana
+
+La API expone `/metrics` con `prometheus-fastapi-instrumentator`:
+
+| Métrica | Tipo | Qué mide |
+|---|---|---|
+| `http_requests_total` | Contador | Requests por ruta, método y código de respuesta |
+| `http_request_duration_seconds` | Histograma | Latencia de cada request |
+| `http_requests_inprogress` | Gauge | Requests que se están atendiendo en este momento |
+
+Instalar Prometheus y Grafana dentro del clúster:
+
+```powershell
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+kubectl create namespace monitoring
+kubectl create secret generic grafana-admin -n monitoring --from-literal=admin-user=admin --from-literal=admin-password=<clave>
+helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring -f k8s/monitoring/helm/values.yaml
+kubectl apply -f k8s/monitoring/
+kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+```
+
+→ http://localhost:3000 → Dashboards → **SoundPass**
+
+Paneles: throughput por ruta, latencia p50/p95, errores 4xx/5xx, CPU por pod, requests en curso, réplicas disponibles y requests totales.
+
+### Tráfico de prueba y autoescalado
+
+```powershell
+Get-Content scripts/trafico.py | kubectl run trafico -i --rm --restart=Never --image=python:3.12-alpine -n soundpass -- python - http://soundpass-api:8000 180 20
+```
+
+En otra terminal:
+
+```powershell
+kubectl get hpa -n soundpass -w
+```
+
+En nuestra prueba la API llegó a unos 150 requests por segundo y el HPA la escaló de 2 a 5 réplicas. Al terminar el tráfico vuelve a 2 en unos 5 minutos.
+
+### Comandos útiles
+
+| Para | Comando |
+|---|---|
+| Ver todo | `kubectl get pods,svc,hpa -n soundpass` |
+| Logs de la API | `kubectl logs deploy/soundpass-api -n soundpass --tail 50` |
+| Por qué no arranca un pod | `kubectl describe pod <nombre> -n soundpass` |
+| Probar que se recupera solo | `kubectl delete pod <nombre-de-un-pod-api> -n soundpass` |
+| Aplicar cambios del Secret | `kubectl apply -k k8s/` y `kubectl rollout restart deploy/soundpass-api -n soundpass` |
+| Apagar el clúster sin borrar nada | `minikube stop` |

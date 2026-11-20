@@ -1,0 +1,54 @@
+# API FastAPI con 2 réplicas (mínimo que pide la guía)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: soundpass-api
+  namespace: soundpass
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: soundpass-api }
+  template:
+    metadata:
+      labels: { app: soundpass-api }
+    spec:
+      # Credencial para descargar de GHCR (el repo es privado)
+      imagePullSecrets:
+        - name: ghcr-cred
+      containers:
+        - name: api
+          image: ghcr.io/iluminx89/sound_pass-api:latest
+          # IfNotPresent: si la imagen ya está en el clúster, no la descarga
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8000 }
+          # Variables de entorno: lo no secreto del ConfigMap y las claves del Secret
+          envFrom:
+            - configMapRef: { name: soundpass-config }
+            - secretRef: { name: soundpass-secrets }
+          # ¿Puede recibir tráfico? Si no, el Service no le manda requests
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # ¿Sigue vivo? Si falla 3 veces seguidas, Kubernetes lo reinicia
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          # requests: lo que reserva. limits: lo máximo que puede usar
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+# Reparte el tráfico entre las réplicas: soundpass-api:8000
+apiVersion: v1
+kind: Service
+metadata:
+  name: soundpass-api
+  namespace: soundpass
+  labels: { app: soundpass-api }
+spec:
+  selector: { app: soundpass-api }
+  ports:
+    - { name: http, port: 8000, targetPort: http }
