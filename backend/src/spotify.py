@@ -56,15 +56,13 @@ def get_spotify_token():
         return _spotify_token
 
     except HTTPError as error:
-        body = error.read().decode("utf-8", errors="ignore")
+        print(f"Error obteniendo token de Spotify " f"HTTP {error.code}")
 
-        print(f"Error obteniendo token de Spotify " f"HTTP {error.code}: {body}")
+    except URLError:
+        print("Error de conexión con Spotify")
 
-    except URLError as error:
-        print("Error de conexión con Spotify:", error)
-
-    except Exception as error:
-        print("Error obteniendo token de Spotify:", error)
+    except Exception:
+        print("Error obteniendo token de Spotify")
 
     return None
 
@@ -137,15 +135,13 @@ def get_artist_image(artist_name: str):
         return image_url
 
     except HTTPError as error:
-        body = error.read().decode("utf-8", errors="ignore")
+        print(f"Spotify HTTP {error.code} " f"buscando artista")
 
-        print(f"Spotify HTTP {error.code} " f"buscando {artist_name}: " f"{body}")
+    except URLError:
+        print("Error de conexión buscando artista")
 
-    except URLError as error:
-        print(f"Error de conexión buscando " f"{artist_name}: {error}")
-
-    except Exception as error:
-        print(f"Error buscando imagen de " f"{artist_name}: {error}")
+    except Exception:
+        print("Error buscando imagen de artista")
 
     return None
 

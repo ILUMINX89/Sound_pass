@@ -1,8 +1,14 @@
+from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings, loaded from environment variables / .env file."""
+
+    app_env: Literal["local", "test", "staging", "production"] = "local"
 
     database_url: str = (
         "postgresql+psycopg2://soundpass_user:soundpass_pass@127.0.0.1:5433/soundpass"
@@ -21,8 +27,31 @@ class Settings(BaseSettings):
     ticketmaster_api_key: str = ""
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=Path(__file__).resolve().parents[1] / ".env", env_file_encoding="utf-8", extra="ignore", hide_input_in_errors=True
     )
+
+    @property
+    def is_public(self) -> bool:
+        return self.app_env in {"staging", "production"}
+
+    @model_validator(mode="after")
+    def validate_public_settings(self):
+        if self.is_public:
+            key = self.secret_key.strip()
+            markers = ("change", "example", "replace", "your", "secret", "soundpass")
+            if (len(key) < 32 or len(set(key)) < 12
+                    or any(marker in key.lower() for marker in markers)):
+                raise ValueError("SECRET_KEY debe ser aleatoria y tener al menos 32 caracteres")
+            if self.database_url == type(self).model_fields["database_url"].default:
+                raise ValueError("DATABASE_URL debe configurarse para el perfil público")
+            for origin in self.cors_origins:
+                parsed = urlsplit(origin)
+                if (parsed.scheme != "https" or not parsed.hostname
+                        or parsed.username or parsed.password
+                        or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
+                        or "*" in origin):
+                    raise ValueError("ALLOWED_ORIGINS debe contener orígenes HTTPS explícitos")
+        return self
 
     @property
     def cors_origins(self) -> list[str]:

@@ -12,6 +12,10 @@ app = FastAPI(
     title="SoundPass API",
     description="API para compra y gestión de boletos de conciertos.",
     version="1.0.0",
+    debug=False,
+    openapi_url=None if settings.is_public else "/openapi.json",
+    docs_url=None if settings.is_public else "/docs",
+    redoc_url=None if settings.is_public else "/redoc",
 )
 
 app.add_middleware(

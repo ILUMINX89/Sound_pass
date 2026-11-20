@@ -527,6 +527,12 @@ Sound_pass/
 - [Guía de contribución](CONTRIBUTING.md)
 - [Bitácora de errores](docs/bitacora.md)
 
+## Perfil público de seguridad (issue #68)
+
+La configuración preparada para el perfil público, ejemplos de entorno y pasos
+pendientes con DevOps se describen en [docs/seguridad-api.md](docs/seguridad-api.md).
+Esa guía reemplaza las instrucciones anteriores de puertos públicos y configuración
+JWT de ejemplo: HTTPS y la topología real de la VM todavía deben verificarse.
 
 ## Kubernetes y monitoreo (Proyecto 3)
 

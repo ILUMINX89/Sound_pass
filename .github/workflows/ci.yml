@@ -31,5 +31,9 @@ jobs:
         working-directory: backend
         run: python -c "from src.main import app"
 
+      - name: Verificar autenticación y propiedad con BD aislada
+        working-directory: backend
+        run: python -m unittest discover -s tests -p test_api_security.py -v
+
       - name: Construir la imagen Docker del backend
         run: docker build -t soundpass-api:ci ./backend
