@@ -38,11 +38,16 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        payload = jwt.decode(
+            token, settings.secret_key, algorithms=["HS256"],
+            options={"require_exp": True, "require_sub": True},
+        )
         user_id = payload.get("sub")
-        if user_id is None:
+        if (not isinstance(user_id, str) or not user_id.isascii()
+                or not user_id.isdigit() or len(user_id) > 10
+                or not 0 < int(user_id) <= 2147483647):
             raise credentials_error
-    except JWTError:
+    except (JWTError, TypeError, ValueError):
         raise credentials_error
 
     user = db.get(models.User, int(user_id))

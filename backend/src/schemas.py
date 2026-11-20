@@ -61,12 +61,19 @@ class ConcertListOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     artist: str
+    source: str = "legacy"
+    official_url: str | None = None
+    catalog_status: str | None = None
+    currency: str | None = None
+    timezone: str | None = None
+    starts_at: datetime | None = None
     tour_name: str
     genre: str
     event_date: date
-    event_time: time
+    event_time: time | None
     venue: VenueOut
-    price_from: Decimal
+    price_from: Decimal | None = None
+    tickets_available: int | None = None
     image_url: str | None = None
 
 
@@ -74,14 +81,21 @@ class ConcertDetailOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     artist: str
+    source: str = "legacy"
+    official_url: str | None = None
+    catalog_status: str | None = None
+    currency: str | None = None
+    timezone: str | None = None
+    starts_at: datetime | None = None
     tour_name: str
     genre: str
     event_date: date
-    event_time: time
+    event_time: time | None
     description: str | None
     image_url: str | None
     venue: VenueOut
     ticket_types: list[TicketTypeOut]
+    price_from: Decimal | None = None
 
 
 # ============================================================
@@ -129,7 +143,7 @@ class ConcertCreate(BaseModel):
     genre: str
     venue_id: int
     event_date: date
-    event_time: time
+    event_time: time | None
     description: str | None = None
     image_url: str | None = None
 
@@ -152,3 +166,91 @@ class VenueCreate(BaseModel):
     city: str
     address: str | None = None
     capacity: int | None = None
+
+# ============================================================
+# Wikipedia — biografía del artista
+# ============================================================
+class ArtistBioOut(BaseModel):
+    concert_id: int
+    artist: str
+    status: Literal["ok", "not_found", "ambiguous", "unavailable"]
+    biography: str | None = Field(default=None, max_length=600)
+    article_title: str | None = None
+    article_url: str | None = None
+    source: Literal["Wikipedia"] = "Wikipedia"
+
+
+
+# ============================================================
+# Spotify — reproductor del artista
+# ============================================================
+
+class SpotifyArtistOut(BaseModel):
+    id: str
+    name: str
+    spotify_url: str
+    embed_url: str
+
+
+class ConcertSpotifyOut(BaseModel):
+    concert_id: int
+    status: Literal["ok", "not_found", "ambiguous"]
+    artist: SpotifyArtistOut | None = None
+    message: str | None = None
+
+
+class SpotifyErrorDetail(BaseModel):
+    code: str
+    message: str
+
+
+class SpotifyErrorOut(BaseModel):
+    detail: SpotifyErrorDetail
+
+
+# ============================================================
+# Spotify — galería del artista
+# ============================================================
+
+class ArtistGalleryImageOut(BaseModel):
+    url: str
+    width: int | None = Field(default=None, gt=0)
+    height: int | None = Field(default=None, gt=0)
+
+
+class ArtistGalleryArtistOut(BaseModel):
+    id: str
+    name: str
+    spotify_url: str
+
+
+class ConcertArtistGalleryOut(BaseModel):
+    concert_id: int
+    source: Literal["spotify"] = "spotify"
+    status: Literal["ok", "not_found", "ambiguous", "no_images"]
+    artist: ArtistGalleryArtistOut | None = None
+    images: list[ArtistGalleryImageOut] = Field(default_factory=list)
+    message: str | None = None
+
+
+# Ticketmaster — próximos conciertos del artista
+from datetime import date as EventDate, time as EventTime
+
+
+class UpcomingArtistEventOut(BaseModel):
+    id: str
+    date: EventDate
+    time: EventTime | None = None
+    timezone: str | None = None
+    city: str | None = None
+    country: str | None = None
+    venue: str | None = None
+
+
+class ConcertUpcomingEventsOut(BaseModel):
+    concert_id: int
+    artist: str
+    source: Literal["ticketmaster"]
+    status: Literal["ok", "not_found", "ambiguous", "no_events"]
+    events: list[UpcomingArtistEventOut]
+    message: str | None = None

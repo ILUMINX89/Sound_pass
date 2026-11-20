@@ -1,0 +1,144 @@
+name: Historia de usuario
+description: Una funcionalidad nueva o un cambio que alguien del equipo debe desarrollar.
+title: "Historia de Usuario: "
+labels: ["historia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Escribe la historia pensando en que **otra persona del equipo la va a desarrollar sin preguntarte nada**.
+        Al crear el issue, el workflow *Project Automation* le pone las etiquetas y llena los campos del tablero (Rol, Tipo, Prioridad, Sprint y Estimación) con lo que elijas aquí.
+
+  - type: dropdown
+    id: rol
+    attributes:
+      label: Rol
+      description: Qué rol del equipo debe desarrollar esta historia.
+      options:
+        - Backend
+        - Frontend
+        - DevOps
+        - QA
+        - Documentación
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo
+      options:
+        - Feature
+        - Bug
+        - Documentation
+        - DevOps
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: Prioridad
+      options:
+        - Alta
+        - Media
+        - Baja
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Sprint
+      options:
+        - Sprint 1
+        - Sprint 2
+        - Sprint 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estimacion
+    attributes:
+      label: Estimación
+      description: Puntos de historia. 1 = menos de una hora, 8 = varios días.
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+    validations:
+      required: true
+
+  - type: input
+    id: como
+    attributes:
+      label: Como
+      placeholder: "usuario comprador / administrador / desarrollador del equipo"
+    validations:
+      required: true
+
+  - type: input
+    id: quiero
+    attributes:
+      label: Quiero
+      placeholder: "filtrar los conciertos por fecha"
+    validations:
+      required: true
+
+  - type: input
+    id: para
+    attributes:
+      label: Para
+      placeholder: "encontrar rápido los conciertos de este fin de semana"
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: Qué existe hoy y por qué hace falta este cambio. Incluye capturas o enlaces si ayudan.
+      placeholder: |
+        Hoy el endpoint GET /concerts solo filtra por ciudad y género.
+        Los usuarios piden ver los conciertos de una fecha concreta.
+    validations:
+      required: true
+
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos técnicos sugeridos
+      description: Archivos a modificar, endpoints, comandos. Escríbelo para alguien que no conoce esta parte del código.
+      placeholder: |
+        1. En backend/src/routers/concerts.py agregar el parámetro opcional `date` a list_concerts.
+        2. Filtrar con `models.Concert.date == date` cuando venga el parámetro.
+        3. En frontend/script.js enviar `?date=` desde el selector de fecha.
+        4. Probar en http://127.0.0.1:8000/docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Cada criterio debe poder comprobarse con un sí o un no.
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: terminado
+    attributes:
+      label: Definición de terminado
+      value: |
+        - [ ] El código está en una rama feature/sprintN-nombre
+        - [ ] Los commits siguen el formato de CONTRIBUTING.md
+        - [ ] El PR dice "Closes #<número de este issue>"
+        - [ ] El CI pasó en verde
+        - [ ] Otro miembro del equipo revisó y aprobó el PR
+        - [ ] Si algo salió mal, quedó anotado en docs/bitacora.md

@@ -1,0 +1,38 @@
+# Puerta de entrada desde el navegador: http://soundpass.local
+#   /api/...  -> API (se quita el /api, igual que el nginx de la VM)
+#   /         -> frontend
+# Requiere: minikube addons enable ingress, y minikube tunnel corriendo
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: soundpass-api
+  namespace: soundpass
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: soundpass.local
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: soundpass-api, port: { number: 8000 } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: soundpass-frontend
+  namespace: soundpass
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: soundpass.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: soundpass-frontend, port: { number: 80 } }

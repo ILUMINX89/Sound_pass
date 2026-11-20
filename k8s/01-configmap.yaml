@@ -1,0 +1,25 @@
+# Configuración NO sensible. Se inyecta como variables de entorno.
+# Las claves van en el Secret (secret.yaml), nunca aquí.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: soundpass-config
+  namespace: soundpass
+data:
+  # Base de datos (usuario y nombre, sin contraseña)
+  POSTGRES_USER: soundpass_user
+  POSTGRES_DB: soundpass
+  # API
+  ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+  ALLOWED_ORIGINS: http://soundpass.local,http://localhost:8080
+
+  TICKETMASTER_COUNTRY_CODE: "CO"
+  TICKETMASTER_WINDOW_DAYS: "365"
+  TICKETMASTER_SYNC_INTERVAL_SECONDS: "1800"
+  OLLAMA_MODEL: "qwen2.5:1.5b"
+  OLLAMA_TIMEOUT_SECONDS: "55"
+
+  TICKETMASTER_SCOPE: "artist_origin"
+  TICKETMASTER_ARTIST_ORIGINS: "US,MX,CO,AR,PR"
+  TICKETMASTER_ARTISTS_PER_ORIGIN: "15"
+  TICKETMASTER_ARTIST_MIN_SITELINKS: "20"

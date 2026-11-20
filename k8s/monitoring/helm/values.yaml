@@ -1,0 +1,31 @@
+# Valores para el chart kube-prometheus-stack (Prometheus + Grafana).
+# Instalar con:
+#   helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring -f k8s/monitoring/helm/values.yaml
+# Ajustado para Minikube: sin Alertmanager y con poca memoria.
+
+alertmanager:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    # Leer los ServiceMonitor de cualquier namespace, no solo los del chart
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    scrapeInterval: 15s
+    retention: 2d
+    resources:
+      requests: { cpu: 100m, memory: 400Mi }
+      limits: { memory: 1Gi }
+
+grafana:
+  # Usuario y contraseña desde el Secret grafana-admin (no van en el repo)
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # Carga sola los dashboards de los ConfigMap con la etiqueta grafana_dashboard: "1"
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
