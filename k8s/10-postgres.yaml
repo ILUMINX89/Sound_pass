@@ -1,0 +1,68 @@
+# PostgreSQL dentro del clúster.
+# StatefulSet: como un Deployment, pero para programas que guardan datos.
+# volumeClaimTemplates crea un disco (PVC) que sobrevive si el pod se reinicia.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: soundpass-db
+  namespace: soundpass
+spec:
+  serviceName: soundpass-db
+  replicas: 1
+  selector:
+    matchLabels: { app: soundpass-db }
+  template:
+    metadata:
+      labels: { app: soundpass-db }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - { name: postgres, containerPort: 5432 }
+          env:
+            - name: POSTGRES_USER
+              valueFrom: { configMapKeyRef: { name: soundpass-config, key: POSTGRES_USER } }
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: soundpass-config, key: POSTGRES_DB } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: soundpass-secrets, key: POSTGRES_PASSWORD } }
+            # Subcarpeta para que Postgres no choque con archivos del disco
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            # schema.sql y seed.sql: Postgres los corre solo la primera vez
+            - { name: init, mountPath: /docker-entrypoint-initdb.d }
+          readinessProbe:
+            exec: { command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""] }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec: { command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""] }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+        # ConfigMap db-init: se crea con los archivos de database/ (ver README)
+        - name: init
+          configMap: { name: db-init }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: { storage: 1Gi }
+---
+# Nombre fijo para que la API encuentre la base: soundpass-db:5432
+apiVersion: v1
+kind: Service
+metadata:
+  name: soundpass-db
+  namespace: soundpass
+spec:
+  selector: { app: soundpass-db }
+  ports:
+    - { name: postgres, port: 5432, targetPort: postgres }
