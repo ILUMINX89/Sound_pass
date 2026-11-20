@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from src import models, schemas
+from src import models, schemas, security
 from src.database import get_db
 
 router = APIRouter(prefix="/venues", tags=["venues"])
@@ -10,7 +10,12 @@ router = APIRouter(prefix="/venues", tags=["venues"])
 def list_venues(db: Session = Depends(get_db)):
     return db.query(models.Venue).all()
 
-@router.post("", response_model=schemas.VenueOut, status_code=201)
+@router.post(
+    "",
+    response_model=schemas.VenueOut,
+    status_code=201,
+    dependencies=[Depends(security.require_admin)],
+)
 def create_venue(payload: schemas.VenueCreate, db: Session = Depends(get_db)):
     venue = models.Venue(**payload.model_dump())
     db.add(venue)
@@ -18,7 +23,11 @@ def create_venue(payload: schemas.VenueCreate, db: Session = Depends(get_db)):
     db.refresh(venue)
     return venue
 
-@router.delete("/{venue_id}", status_code=204)
+@router.delete(
+    "/{venue_id}",
+    status_code=204,
+    dependencies=[Depends(security.require_admin)],
+)
 def delete_venue(venue_id: int, db: Session = Depends(get_db)):
     venue = db.get(models.Venue, venue_id)
     if not venue:

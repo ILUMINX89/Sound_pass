@@ -2,9 +2,10 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from src import models, schemas
+from src import models, schemas, security
 from src.database import get_db
 from src.spotify import (
     SpotifyArtistError,
@@ -124,7 +125,12 @@ def get_concert(concert_id: int, db: Session = Depends(get_db)):
 # ============================================================
 
 
-@router.post("", response_model=schemas.ConcertDetailOut, status_code=201)
+@router.post(
+    "",
+    response_model=schemas.ConcertDetailOut,
+    status_code=201,
+    dependencies=[Depends(security.require_admin)],
+)
 def create_concert(payload: schemas.ConcertCreate, db: Session = Depends(get_db)):
     venue = db.get(models.Venue, payload.venue_id)
 
@@ -147,7 +153,11 @@ def create_concert(payload: schemas.ConcertCreate, db: Session = Depends(get_db)
 # ============================================================
 
 
-@router.put("/{concert_id}", response_model=schemas.ConcertDetailOut)
+@router.put(
+    "/{concert_id}",
+    response_model=schemas.ConcertDetailOut,
+    dependencies=[Depends(security.require_admin)],
+)
 def update_concert(
     concert_id: int, payload: schemas.ConcertUpdate, db: Session = Depends(get_db)
 ):
@@ -178,16 +188,34 @@ def update_concert(
 # ============================================================
 
 
-@router.delete("/{concert_id}", status_code=204)
+@router.delete(
+    "/{concert_id}",
+    status_code=204,
+    dependencies=[Depends(security.require_admin)],
+)
 def delete_concert(concert_id: int, db: Session = Depends(get_db)):
     concert = db.get(models.Concert, concert_id)
 
     if not concert:
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
+    has_orders = db.query(models.Order.id).filter(models.Order.concert_id == concert_id).first()
+    if has_orders:
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede eliminar: el concierto tiene órdenes asociadas",
+        )
+
     db.delete(concert)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede eliminar: el concierto tiene datos asociados",
+        )
 
     return None
 

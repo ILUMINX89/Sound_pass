@@ -18,6 +18,8 @@ CREATE TABLE users (
     full_name       VARCHAR(150)        NOT NULL,
     email           VARCHAR(150)        NOT NULL UNIQUE,
     password_hash   VARCHAR(255)        NOT NULL,
+    role            VARCHAR(20)         NOT NULL DEFAULT 'customer'
+                        CHECK (role IN ('customer', 'admin')),
     created_at      TIMESTAMPTZ         NOT NULL DEFAULT now()
 );
 

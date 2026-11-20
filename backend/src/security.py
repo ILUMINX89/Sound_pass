@@ -49,3 +49,13 @@ def get_current_user(
     if user is None:
         raise credentials_error
     return user
+
+
+def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
+    """Permite continuar solo a cuentas con rol 'admin'. Sin token válido responde 401; con otro rol, 403."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de administrador",
+        )
+    return current_user
