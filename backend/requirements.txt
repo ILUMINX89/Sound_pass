@@ -12,3 +12,4 @@ python-jose[cryptography]==3.3.0
 alembic==1.13.2
 reportlab
 qrcode[pil]
+httpx==0.28.1

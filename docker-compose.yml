@@ -2,17 +2,15 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: soundpass_user
-      POSTGRES_PASSWORD: soundpass_pass
-      POSTGRES_DB: soundpass
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:?Configure POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?Configure POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
       - ./database/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U soundpass_user -d soundpass"]
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,11 +18,15 @@ services:
   api:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg2://soundpass_user:soundpass_pass@db:5432/soundpass
-      SECRET_KEY: change-this-to-a-long-random-string
-      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:?Configure DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY:?Configure SECRET_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
