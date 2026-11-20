@@ -274,7 +274,8 @@ La historia #5 no se incluye porque su issue se creó después de terminar el tr
 ```bash
 git clone https://github.com/ILUMINX89/Sound_pass.git
 cd Sound_pass
-docker compose up -d --build
+# Configura backend/.env a partir de backend/.env.example antes de arrancar.
+docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build
 ```
 
 Docker ejecuta `database/schema.sql` y `database/seed.sql` la primera vez que arranca PostgreSQL, así que la base queda poblada sin pasos adicionales.
@@ -283,9 +284,9 @@ Docker ejecuta `database/schema.sql` y `database/seed.sql` la primera vez que ar
 |---|---|
 | API | http://127.0.0.1:8000 |
 | Documentación interactiva (Swagger) | http://127.0.0.1:8000/docs |
-| Frontend | abrir `frontend/index.html` con Live Server |
+| Frontend | http://127.0.0.1:5500 |
 
-Para empezar desde cero: `docker compose down -v` y otra vez `docker compose up -d --build`.
+Usa `--env-file backend/.env` en los comandos de Compose. El archivo privado de configuración vive en `backend/.env`.
 
 ### Variables de entorno
 
@@ -318,7 +319,7 @@ Las contraseñas se guardan con hash bcrypt.
 Al hacer merge de `development` a `production`, el workflow **Despliegue (CD)**:
 
 1. Copia `backend`, `frontend`, `database` y `docker-compose.yml` a la VM por SSH.
-2. Ejecuta `docker compose up -d --build` y copia el frontend a `/var/www/soundpass/`.
+2. Con `backend/.env` configurado en la VM, ejecuta `docker compose --env-file backend/.env up -d --build` y copia el frontend a `/var/www/soundpass/`.
 3. Verifica que `http://20.80.47.160/api/health` responda; si no, el workflow sale en rojo.
 
 También se puede lanzar a mano en **Actions → Despliegue (CD) → Run workflow**.
@@ -669,3 +670,5 @@ En nuestra prueba la API llegó a unos 150 requests por segundo y el HPA la esca
 | Probar que se recupera solo | `kubectl delete pod <nombre-de-un-pod-api> -n soundpass` |
 | Aplicar cambios del Secret | `kubectl apply -k k8s/` y `kubectl rollout restart deploy/soundpass-api -n soundpass` |
 | Apagar el clúster sin borrar nada | `minikube stop` |
+
+Catalogo real y procedimiento de migracion, respaldo, sincronizacion y restauracion: [docs/catalogo-ticketmaster.md](docs/catalogo-ticketmaster.md).

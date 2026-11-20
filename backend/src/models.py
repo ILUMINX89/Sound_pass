@@ -30,6 +30,8 @@ class Venue(Base):
     address: Mapped[str | None] = mapped_column(String(255))
     capacity: Mapped[int | None] = mapped_column(Integer)
 
+    external_id: Mapped[str | None] = mapped_column(String(255), unique=True)
+
     concerts: Mapped[list["Concert"]] = relationship(back_populates="venue")
 
 
@@ -37,15 +39,29 @@ class Concert(Base):
     __tablename__ = "concerts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    artist: Mapped[str] = mapped_column(String(150), nullable=False)
-    tour_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    artist: Mapped[str] = mapped_column(Text, nullable=False)
+    tour_name: Mapped[str] = mapped_column(Text, nullable=False)
     genre: Mapped[str] = mapped_column(String(50), nullable=False)
     venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id"), nullable=False)
     event_date: Mapped[date] = mapped_column(Date, nullable=False)
-    event_time: Mapped[time] = mapped_column(Time, nullable=False)
+    event_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     description: Mapped[str | None] = mapped_column(Text)
     image_url: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    source: Mapped[str] = mapped_column(String(30), default="legacy", server_default="legacy")
+    external_id: Mapped[str | None] = mapped_column(String(255), unique=True)
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    timezone: Mapped[str | None] = mapped_column(String(100))
+    catalog_status: Mapped[str] = mapped_column(String(30), default="inactive", server_default="inactive")
+    official_url: Mapped[str | None] = mapped_column(Text)
+    provider_price: Mapped[float | None] = mapped_column(Numeric(18, 2))
+    currency: Mapped[str | None] = mapped_column(String(3))
+    country_code: Mapped[str | None] = mapped_column(String(2))
+    catalog_scope: Mapped[str] = mapped_column(String(64), default="CO", server_default="CO")
+    artist_provenance: Mapped[str | None] = mapped_column(Text)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    missing_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     venue: Mapped["Venue"] = relationship(back_populates="concerts")
     ticket_types: Mapped[list["TicketType"]] = relationship(
@@ -149,3 +165,12 @@ class IssuedTicket(Base):
             name="ck_issued_tickets_sequence_positive",
         ),
     )
+
+
+class CatalogSync(Base):
+    __tablename__ = "catalog_sync"
+    country_code: Mapped[str] = mapped_column(String(64), primary_key=True)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    window_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    window_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    event_count: Mapped[int] = mapped_column(Integer, default=0)

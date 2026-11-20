@@ -12,3 +12,5 @@ resources:
   - 30-frontend.yaml
   - 40-ingress.yaml
   - 50-hpa.yaml
+
+  - 21-catalog-sync.yaml

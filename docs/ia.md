@@ -33,8 +33,7 @@ que el modelo esté instalado. Para Compose, verifica también desde el contened
 curl --connect-timeout 5 --max-time 10 -fsS http://100.89.0.83:11434/api/tags
 ```
 
-Agrega a `backend/.env` si ejecutas Uvicorn directamente, o al `.env` privado de
-la raíz si usas Compose. Si `/api/tags` devuelve otra etiqueta, usa la exacta.
+Agrega las variables a `backend/.env`. En Compose, pasa ese archivo con `--env-file backend/.env`. Si `/api/tags` devuelve otra etiqueta, usa la exacta.
 
 ```dotenv
 OLLAMA_BASE_URL=http://100.89.0.83:11434
@@ -51,8 +50,8 @@ Con Compose, reconstruye la API y publica el frontend actualizado por el flujo
 habitual de la VM.
 
 ```bash
-docker compose up -d --build api
-docker compose exec -T api python -c 'import os,httpx; print(httpx.get(os.environ["OLLAMA_BASE_URL"].rstrip("/") + "/api/tags",timeout=5,trust_env=False).status_code)'
+docker compose --env-file backend/.env up -d --build api
+docker compose --env-file backend/.env exec -T api python -c 'import os,httpx; print(httpx.get(os.environ["OLLAMA_BASE_URL"].rstrip("/") + "/api/tags",timeout=5,trust_env=False).status_code)'
 ```
 
 ## Prueba funcional
@@ -69,3 +68,19 @@ curl -fsS http://127.0.0.1:8000/assistant/chat \
 Repite con «¿Cómo descargo mi boleto?» y comprueba que el chat web muestra ambas
 respuestas. En la VM, la prueba por el proxy usa `/api/assistant/chat` en el
 dominio HTTPS de SoundPass. Swagger está disponible en entorno local.
+
+
+## Consulta deterministica del catalogo sincronizado
+
+POST /assistant/chat conserva JWT y el contrato message -> reply. Una sola llamada a Ollama solicita JSON validado con intent concerts/help/clarify, order nearest_first/latest_first, artist y city opcionales. El modelo no recibe tokens, ordenes ni SQL. La aplicacion abre una sesion propia en un worker y consulta src.catalog, igual que GET /concerts. No llama Ticketmaster por pregunta ni usa una segunda generacion para formatear resultados.
+
+- "Que conciertos hay proximos de mayor a menor en tiempo al dia actual?": latest_first, del mas lejano al mas cercano.
+- "Dame los mas cercanos primero": nearest_first, orden por defecto.
+- "Fechas de Bad Bunny en Madrid": filtro parametrizado de artista y ciudad, con el alcance global por origen configurado.
+- "Como descargo mis boletos?": ayuda sobre Mis boletos, detalle y PDF de compras locales. Las compras de eventos importados usan Ver en Ticketmaster.
+
+El reloj de referencia es Bogota y cada evento conserva fecha y hora local y su zona; hora desconocida permanece null hasta terminar su fecha local. Dentro del mismo dia las horas desconocidas van despues de las confirmadas en ambas direcciones, con ID estable para desempatar. Se muestran como maximo 20 resultados y se informa mostrados/total. Sin coincidencias se menciona el alcance de Ticketmaster; sin primer sync se informa que aun no hay informacion. La ultima sincronizacion y su estado actualizado/desactualizado aparecen en la respuesta. JSON invalido produce un error controlado sin afirmar fechas.
+
+Para el alcance actual se admiten cantantes verificados de US, MX, CO, AR y PR con eventos en cualquier lugar. El criterio de seleccion y la operacion se describen en catalogo-ticketmaster.md. No afirmar que la lista cubre todos los artistas ni todo el mercado mundial. El modelo configurado se mantiene en OLLAMA_MODEL; se conserva el timeout de 55 segundos y se registra latencia sin contenido privado.
+
+La aplicacion valida tambien direcciones temporales explicitas (mayor a menor en tiempo, lejano a cercano, descendente cronologico y sus inversas) para corregir inversiones del clasificador observadas en la prueba real. Se conserva una sola llamada al modelo y la consulta compartida controla el resultado.

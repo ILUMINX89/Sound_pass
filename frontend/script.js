@@ -2,6 +2,7 @@ const API_URL = "/api";
 let CONCERTS = [], TICKETS = [];
 const state = { selectedConcertId: null, selectedConcert: null, selectedTicketTypeId: null, qty: 1, currentUser: null, pendingScreen: null, lastOrder: null, orderToCancel: null, activeTicketTab: "proximos", filters: { city: "", genres: [], date: "all", sort: "date", search: "" } };
 const fmtCOP = n => "$" + Number(n || 0).toLocaleString("es-CO");
+const providerPrice = c => c.price_from == null ? "Precio no informado" : `${Number(c.price_from).toLocaleString("es-CO")} ${esc(c.currency || "COP")}`;
 const token = () => localStorage.getItem("soundpass_token");
 const concert = () => state.selectedConcert;
 const ticketType = () => concert()?.ticket_types?.find(t => t.id === state.selectedTicketTypeId);
@@ -36,8 +37,8 @@ function goTo(id) {
   document.querySelectorAll(".primary-nav__link[data-active-on]").forEach(el => el.classList.toggle("is-active", el.dataset.activeOn.split(",").includes(id)));
   if (id === "checkout") renderCheckout(); if (id === "mytickets") loadTickets(); window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function collectionMessage(text) { document.getElementById("featured-grid").innerHTML = `<div class="empty-state collection-message"><p>${esc(text)}</p></div>`; document.getElementById("concert-list").innerHTML = `<div class="empty-state"><p>${esc(text)}</p></div>`; document.getElementById("concert-count").textContent = "Conciertos (0)"; }
-async function loadConcerts() { collectionMessage("Cargando conciertos..."); CONCERTS = await api("/concerts?sort=date"); populateFilters(); renderFeatured(); renderListing(); }
+function collectionMessage(text) { document.getElementById("featured-grid").innerHTML = `<div class="empty-state collection-message"><p>${esc(text)}</p></div>`; document.getElementById("concert-list").innerHTML = `<div class="empty-state"><p>${esc(text)}</p></div>`; document.getElementById("concert-count").textContent = "Artistas (0)"; }
+async function loadConcerts() { collectionMessage("Cargando conciertos..."); const [rows, status] = await Promise.all([api("/concerts?sort=date"), api("/concerts/catalog-status")]); CONCERTS = rows; populateFilters(); renderFeatured(); renderListing(); if (!rows.length) collectionMessage(status.status === "unavailable" ? "El catalogo aun no tiene una sincronizacion disponible." : "Sin conciertos proximos en la fuente consultada: Ticketmaster."); }
 function populateFilters() {
   const cities = [...new Set(CONCERTS.map(c => c.venue.city).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
   document.getElementById("f-city").innerHTML = `<option value="">Todas</option>${cities.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("")}`;
@@ -45,14 +46,24 @@ function populateFilters() {
   document.getElementById("genre-filters").innerHTML = genres.map(v => `<label class="checkbox"><input type="checkbox" value="${esc(v)}"><span>${esc(v)}</span></label>`).join("");
 }
 function filteredConcerts() {
-  const now = new Date(), monthStart = new Date(now.getFullYear(), now.getMonth(), 1), monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59), three = new Date(now); three.setMonth(three.getMonth() + 3); const q = state.filters.search.toLocaleLowerCase("es").trim();
-  return CONCERTS.filter(c => { const d = new Date(`${c.event_date}T12:00:00`); return (!state.filters.city || c.venue.city === state.filters.city) && (!state.filters.genres.length || state.filters.genres.includes(c.genre)) && (!q || [c.artist, c.tour_name, c.genre, c.venue.name, c.venue.city].some(v => String(v || "").toLocaleLowerCase("es").includes(q))) && (state.filters.date === "month" ? d >= monthStart && d <= monthEnd : state.filters.date === "three_months" ? d >= now && d <= three : true); }).sort((a, b) => state.filters.sort === "price_asc" ? Number(a.price_from) - Number(b.price_from) : state.filters.sort === "price_desc" ? Number(b.price_from) - Number(a.price_from) : `${a.event_date}${a.event_time}`.localeCompare(`${b.event_date}${b.event_time}`));
+  const now = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Bogota"})), monthStart = new Date(now.getFullYear(), now.getMonth(), 1), monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59), three = new Date(now); three.setMonth(three.getMonth() + 3); const q = state.filters.search.toLocaleLowerCase("es").trim();
+  return CONCERTS.filter(c => { const d = new Date(`${c.event_date}T12:00:00`); return (!state.filters.city || c.venue.city === state.filters.city) && (!state.filters.genres.length || state.filters.genres.includes(c.genre)) && (!q || [c.artist, c.tour_name, c.genre, c.venue.name, c.venue.city].some(v => String(v || "").toLocaleLowerCase("es").includes(q))) && (state.filters.date === "month" ? d >= monthStart && d <= monthEnd : state.filters.date === "three_months" ? d >= now && d <= three : true); });
+}
+function sortArtistCards(rows) {
+  return rows.sort((a, b) => {
+    if (state.filters.sort.startsWith("price")) {
+      if (a.price_from == null || b.price_from == null) return (a.price_from == null) - (b.price_from == null);
+      const currency = (a.currency || "").localeCompare(b.currency || "");
+      return currency || (state.filters.sort === "price_desc" ? b.price_from - a.price_from : a.price_from - b.price_from) || a.id - b.id;
+    }
+    return 0; // Preserve the server order of actual instants across event time zones.
+  });
 }
 /* ===== Cuenta regresiva y estado de disponibilidad =====
    Umbrales (ajustables): por tipo de boleto y por concierto completo. */
 const LOW_STOCK_TYPE = 50, LOW_STOCK_TOTAL = 100;
 const ICO_CLOCK = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
-function daysUntil(c) { if (!c?.event_date) return null; const [y, m, d] = c.event_date.slice(0, 10).split("-").map(Number), n = new Date(); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5); }
+function daysUntil(c) { if (!c?.event_date) return null; const [y, m, d] = c.event_date.slice(0, 10).split("-").map(Number), n = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Bogota"})); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5); }
 function countdownInfo(c) {
   const n = daysUntil(c); if (n === null) return null;
   if (n < 0) return { text: "Finalizado", cls: "cs--muted", past: true };
@@ -83,12 +94,73 @@ function statusChips(c) {
 }
 const soldClass = c => stockInfo(c)?.state === "soldout" ? " is-soldout" : "";
 function renderStatus(c) {
+  if (c.source === "ticketmaster") {
+    const btn = document.querySelector('[data-nav="checkout"]');
+    if (btn) { btn.disabled = !c.official_url; btn.textContent = c.official_url ? "Ver en Ticketmaster" : "Enlace no disponible"; }
+    const options = document.getElementById("ticket-options");
+    options.textContent = providerPrice(c);
+    const box = document.getElementById("detail-status"); if (box) box.innerHTML = statusChips(c);
+    return;
+  }
   const box = document.getElementById("detail-status"); if (box) box.innerHTML = statusChips(c);
   const btn = document.querySelector('[data-nav="checkout"]'), t = ticketType(), out = !t || Number(t.quantity_available) <= 0;
   if (btn) { btn.disabled = out; btn.textContent = t && out ? "Agotado" : "Continuar"; }
 }
-function renderFeatured() { const rows = CONCERTS.slice(0, 6); document.getElementById("featured-grid").innerHTML = rows.length ? rows.map(c => `<article class="feature-card${soldClass(c)}" data-open="${c.id}">${art(c, "feature-card__art", statusChips(c))}<div class="feature-card__body"><p class="feature-card__title">${esc(c.artist)}</p><p class="feature-card__meta">${esc(c.venue.name)} — ${fmtDate(c.event_date)}</p></div></article>`).join("") : `<div class="empty-state collection-message"><p>No hay conciertos próximos disponibles.</p></div>`; }
-function renderListing() { const rows = filteredConcerts(); document.getElementById("concert-count").textContent = `Conciertos (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${fmtCOP(c.price_from)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
+function renderFeatured() { const rows = artistCards(CONCERTS).slice(0, 6); document.getElementById("featured-grid").innerHTML = rows.length ? rows.map(c => `<article class="feature-card${soldClass(c)}" data-open="${c.id}">${art(c, "feature-card__art", statusChips(c))}<div class="feature-card__body"><p class="feature-card__title">${esc(c.artist)}</p><p class="feature-card__meta">${esc(c.venue.name)} — ${fmtDate(c.event_date)}</p></div></article>`).join("") : `<div class="empty-state collection-message"><p>No hay conciertos próximos disponibles.</p></div>`; }
+const artistKey = value => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("es").trim().replace(/\s+/g, " ");
+const isVipPackage = title => /\bvip\b.*\b(?:experiences?|packages?|upgrades?|hospitality)\b|\b(?:experiences?|packages?|upgrades?|hospitality)\b.*\bvip\b|paquete vip/.test(artistKey(title));
+function artistDate(c) {
+  return {
+    id: c.ticketmaster_event_id ?? c.external_event_id ?? c.external_id,
+    date: c.event_date,
+    time: c.event_time,
+    city: c.venue?.city,
+    country: c.venue?.country,
+    venue: c.venue?.name,
+    timezone: c.timezone ?? c.event_timezone,
+    url: c.official_url,
+    vip: isVipPackage(c.tour_name)
+  };
+}
+function sameArtistPlace(a, b) {
+  const cityA = artistKey(a.city), cityB = artistKey(b.city);
+  const countryA = artistKey(a.country), countryB = artistKey(b.country);
+  if ((cityA && cityB && cityA !== cityB) || (countryA && countryB && countryA !== countryB)) return false;
+  const venueA = artistKey(a.venue), venueB = artistKey(b.venue);
+  const knownVenue = name => name && !/desconocido|por confirmar|unknown/.test(name);
+  return knownVenue(venueA) && knownVenue(venueB) ? venueA === venueB : Boolean(cityA && cityA === cityB);
+}
+const showTime = value => /^(\d{2}:\d{2})/.exec(String(value || ""))?.[1] ?? "";
+function sameArtistShow(a, b) {
+  if (a.id && b.id && String(a.id) === String(b.id)) return true;
+  if (a.date !== b.date || !sameArtistPlace(a, b)) return false;
+  const first = showTime(a.time), second = showTime(b.time);
+  if (first && first === second) return true;
+  if (Boolean(a.vip) === Boolean(b.vip) || !first || !second) return false;
+  const minutes = time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+  return Math.abs(minutes(first) - minutes(second)) <= 90;
+}
+function artistCards(events) {
+  const groups = new Map();
+  for (const event of events) {
+    const key = event.artist_id != null ? `id:${event.artist_id}` : artistKey(event.artist) || `event:${event.id}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(event);
+  }
+  const chosen = new Set();
+  for (const group of groups.values()) {
+    // Las filas de CONCERTS ya vienen ordenadas cronológicamente por el servidor.
+    chosen.add(group.find(event => {
+      const show = artistDate(event);
+      return !show.vip || !group.some(other => {
+        const main = artistDate(other);
+        return !main.vip && sameArtistShow(show, main);
+      });
+    }));
+  }
+  return events.filter(event => chosen.has(event));
+}
+function renderListing() { const rows = sortArtistCards(artistCards(filteredConcerts())); document.getElementById("concert-count").textContent = `Artistas (${rows.length})`; document.getElementById("concert-list").innerHTML = rows.length ? rows.map(c => `<article class="concert-row${soldClass(c)}" data-open="${c.id}">${art(c, "concert-row__art")}<div class="concert-row__body"><p class="concert-row__title">${esc(c.artist)}</p><p class="concert-row__sub">${esc(c.tour_name)}</p>${statusChips(c)}<div class="concert-row__meta"><span>🗓 ${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}</span><span>📍 ${esc(venue(c))}</span></div></div><div class="concert-row__price"><small>Desde</small><strong>${providerPrice(c)}</strong></div><button class="btn btn--primary btn--sm" data-open="${c.id}">Ver evento</button></article>`).join("") : `<div class="empty-state"><h3>No encontramos conciertos</h3><p>Prueba con otros filtros o términos de búsqueda.</p></div>`; }
  
 async function openConcert(id) {
   spotifyClear(); loadUpcomingEvents(Number(id)); loadArtistBio(Number(id)); // la biografía va por su cuenta: si Wikipedia falla, el detalle y la compra siguen igual
@@ -97,7 +169,7 @@ async function openConcert(id) {
 }
 function renderDetail() {
   const c = concert(); if (!c) return; const poster = document.querySelector(".detail-poster"), url = imageUrl(c.image_url); poster.className = `detail-poster dynamic-art${url ? " has-image" : ""}`; poster.style.backgroundImage = url ? `linear-gradient(0deg,rgba(0,0,0,.62),transparent 60%),url("${url.replace(/"/g, "%22")}")` : ""; poster.querySelector(".poster__tag").textContent = c.artist; poster.querySelector(".poster__tag2").textContent = c.tour_name; document.querySelector(".detail-title").textContent = c.artist; document.querySelector(".detail-sub").textContent = `${c.tour_name} · ${c.genre}`;
-  document.querySelector(".meta-info").innerHTML = `<p><span class="dot">•</span> ${fmtDate(c.event_date, true)} · ${fmtTime(c.event_time)}</p><p><span class="dot">•</span> ${esc(venue(c))}</p>${c.venue.address ? `<p><span class="dot">•</span> ${esc(c.venue.address)}</p>` : ""}<p><span class="dot">•</span> Capacidad: ${Number(c.venue.capacity || 0).toLocaleString("es-CO")} personas</p>`; document.querySelector(".detail-blurb").textContent = c.description || "Información adicional no disponible.";
+  document.querySelector(".meta-info").innerHTML = `<p><span class="dot">•</span> ${fmtDate(c.event_date, true)} · ${fmtTime(c.event_time)}</p><p><span class="dot">•</span> ${esc(venue(c))}</p>${c.venue.address ? `<p><span class="dot">•</span> ${esc(c.venue.address)}</p>` : ""}<p><span class="dot">•</span> Capacidad: ${c.venue.capacity == null ? "Desconocida" : Number(c.venue.capacity).toLocaleString("es-CO") + " personas"}</p>`; document.querySelector(".detail-blurb").textContent = c.description || "Información adicional no disponible.";
   document.getElementById("stage-zones").innerHTML = c.ticket_types.map((t, i) => `<div class="stage-zone" style="width:${Math.min(96, 42 + i * 18)}%">${esc(t.name)}</div>`).join(""); document.getElementById("ticket-options").innerHTML = c.ticket_types.length ? c.ticket_types.map(t => `<label class="ticket-option ${t.id === state.selectedTicketTypeId ? "is-selected" : ""} ${t.quantity_available < 1 ? "is-disabled" : ""}" data-ticket-type="${t.id}"><span class="ticket-option__left"><span class="radio-outer"><span class="radio-inner"></span></span><span>${esc(t.name)}<small class="${typeStock(t).cls}">${typeStock(t).text}</small></span></span><span class="ticket-option__price">${fmtCOP(t.price)}</span></label>`).join("") : `<p class="form-message is-error">No hay tipos de boleto disponibles.</p>`; document.getElementById("qty-val").textContent = state.qty; document.querySelector('[data-nav="checkout"]').disabled = !ticketType(); renderStatus(c); loadSpotify(c);
 }
 function renderCheckout() {
@@ -125,7 +197,7 @@ async function confirmCancellation() { if (!state.orderToCancel) return; const b
 document.addEventListener("click", e => { const nav = e.target.closest("[data-nav]"), open = e.target.closest("[data-open]"), type = e.target.closest("[data-ticket-type]"), view = e.target.closest("[data-auth-view]"), cancel = e.target.closest("[data-cancel-order]"); if (nav && nav.dataset.nav !== "checkout") goTo(nav.dataset.nav); if (open) openConcert(open.dataset.open); if (type && !type.classList.contains("is-disabled")) { state.selectedTicketTypeId = Number(type.dataset.ticketType); state.qty = Math.min(state.qty, ticketType()?.quantity_available || 1); renderDetail(); } if (view) setAuthView(view.dataset.authView); if (cancel) openCancelModal(cancel.dataset.cancelOrder); });
 document.getElementById("f-city").onchange = e => { state.filters.city = e.target.value; renderListing(); }; document.getElementById("f-date").onchange = e => { state.filters.date = e.target.value; renderListing(); }; document.getElementById("genre-filters").onchange = () => { state.filters.genres = [...document.querySelectorAll("#genre-filters input:checked")].map(x => x.value); renderListing(); }; document.getElementById("sort-select").onchange = e => { state.filters.sort = e.target.value; renderListing(); }; document.getElementById("concert-search").oninput = e => { state.filters.search = e.target.value; renderListing(); };
 document.getElementById("account-button").onclick = () => { if (!state.currentUser) return openAuth(); const m = document.getElementById("account-menu"); m.hidden = !m.hidden; }; document.getElementById("account-tickets").onclick = () => { document.getElementById("account-menu").hidden = true; goTo("mytickets"); }; document.getElementById("logout-button").onclick = () => { localStorage.removeItem("soundpass_token"); state.currentUser = null; document.getElementById("account-menu").hidden = true; renderAccount(); goTo("home"); }; document.addEventListener("click", e => { if (!e.target.closest(".topbar__right")) document.getElementById("account-menu").hidden = true; });
-document.getElementById("auth-close").onclick = closeAuth; document.getElementById("auth-modal").onclick = e => { if (e.target.id === "auth-modal") closeAuth(); }; document.getElementById("qty-minus").onclick = () => { state.qty = Math.max(1, state.qty - 1); renderDetail(); }; document.getElementById("qty-plus").onclick = () => { state.qty = Math.min(10, ticketType()?.quantity_available || 1, state.qty + 1); renderDetail(); }; document.querySelector('[data-nav="checkout"]').onclick = e => { e.preventDefault(); if (!ticketType()) return; token() ? goTo("checkout") : openAuth("checkout"); };
+document.getElementById("auth-close").onclick = closeAuth; document.getElementById("auth-modal").onclick = e => { if (e.target.id === "auth-modal") closeAuth(); }; document.getElementById("qty-minus").onclick = () => { state.qty = Math.max(1, state.qty - 1); renderDetail(); }; document.getElementById("qty-plus").onclick = () => { state.qty = Math.min(10, ticketType()?.quantity_available || 1, state.qty + 1); renderDetail(); }; document.querySelector('[data-nav="checkout"]').onclick = e => { e.preventDefault(); if (concert()?.source === "ticketmaster") { if (concert().official_url) window.open(concert().official_url, "_blank", "noopener,noreferrer"); return; } if (!ticketType()) return; token() ? goTo("checkout") : openAuth("checkout"); };
 document.querySelectorAll(".payment-option").forEach(o => o.onclick = () => { document.querySelectorAll(".payment-option").forEach(x => x.classList.remove("is-selected")); o.classList.add("is-selected"); o.querySelector("input").checked = true; });
 document.getElementById("login-form").onsubmit = async e => { e.preventDefault(); const btn = e.currentTarget.querySelector("[type=submit]"); if (btn.disabled) return; btn.disabled = true; message("login-message", "", false); const f = new FormData(e.currentTarget); try { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ email: f.get("email"), password: f.get("password") }) }); localStorage.setItem("soundpass_token", r.access_token); state.currentUser = await api("/auth/me"); renderAccount(); const next = state.pendingScreen; closeAuth(); if (next) goTo(next); } catch (err) { message("login-message", err.message); } finally { btn.disabled = false; } };
 document.getElementById("register-form").onsubmit = async e => { e.preventDefault(); const btn = e.currentTarget.querySelector("[type=submit]"); if (btn.disabled) return; btn.disabled = true; message("register-message", "", false); const f = new FormData(e.currentTarget); try { await api("/auth/register", { method: "POST", body: JSON.stringify({ full_name: f.get("full_name"), email: f.get("email"), password: f.get("password") }) }); document.getElementById("login-email").value = f.get("email"); setAuthView("login"); message("login-message", "Cuenta creada. Ahora inicia sesión.", false); } catch (err) { message("register-message", err.message); } finally { btn.disabled = false; } };
@@ -400,7 +472,7 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-arti
 /* ===== Próximos conciertos del artista (Ticketmaster) =====
    GET /concerts/{id}/upcoming-events  (misma base y mismo api() que el resto)
    -> { concert_id, artist, source: "ticketmaster", status: "ok"|"no_events"|"not_found"|"ambiguous", events: [{ id, date, time, timezone, city, country, venue }], message? }
-   Solo informativo: sin enlaces ni botones de compra; las fechas no implican entradas en SoundPass.
+   Las fechas pueden enlazar a Ticketmaster cuando existe un enlace oficial.
    La API key vive solo en el backend (que cachea 15 min): una consulta por apertura del detalle, sin sondeos.
    La hora ya es la local del evento: no se convierte a la zona del navegador. La fecha se formatea como día de calendario (fmtDate, UTC).
    Todo lo que viene de la API se inserta con textContent. */
@@ -422,6 +494,40 @@ function upcomingClear() {
 }
 const upcomingText = v => typeof v === "string" && v.trim() ? v.trim() : "";
 function upcomingNode(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text !== undefined) el.textContent = text; return el; }
+function upcomingArtistEvents(id, remote = []) {
+  const selected = CONCERTS.find(c => c.id === id) || (concert()?.id === id ? concert() : null);
+  const current = selected && artistDate(selected);
+  const local = selected ? CONCERTS.filter(c => c.id !== id && (
+    c.artist_id != null && selected.artist_id != null
+      ? String(c.artist_id) === String(selected.artist_id)
+      : artistKey(c.artist) && artistKey(c.artist) === artistKey(selected.artist)
+  )).map(artistDate) : [];
+  const events = [...local, ...remote.map(event => event && ({
+    ...event,
+    vip: isVipPackage(event.name ?? event.title),
+    url: event.official_url ?? event.url
+  }))].filter(event => event && /^\d{4}-\d{2}-\d{2}$/.test(event.date));
+  const shows = [];
+  for (const event of events) {
+    let today;
+    try { today = new Intl.DateTimeFormat("sv-SE", { timeZone: event.timezone || "America/Bogota" }).format(new Date()); }
+    catch { today = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bogota" }).format(new Date()); }
+    if (event.date < today || (current && sameArtistShow(current, event))) continue;
+    if (event.vip && events.some(other => !other.vip && sameArtistShow(event, other))) continue;
+    const duplicate = shows.find(show => sameArtistShow(show, event));
+    if (!duplicate) shows.push(event);
+    else if (!duplicate.url) duplicate.url = event.url;
+  }
+  return shows.sort((a, b) => a.date.localeCompare(b.date)
+    || (showTime(a.time) || "99:99").localeCompare(showTime(b.time) || "99:99"));
+}
+function upcomingTicketmasterUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password
+      && /^(?:[a-z0-9-]+\.)*ticketmaster\.(?:com(?:\.[a-z]{2})?|co\.[a-z]{2}|[a-z]{2})$/i.test(url.hostname) ? url.href : "";
+  } catch { return ""; }
+}
 function renderUpcoming(kind, opts = {}) {
   const body = upcomingBody(); if (!body) return;
   body.setAttribute("aria-busy", kind === "loading" ? "true" : "false"); body.replaceChildren(); body.className = "ue-card";
@@ -436,6 +542,14 @@ function renderUpcoming(kind, opts = {}) {
     if (venueName) where.append(upcomingNode("strong", "ue-venue", venueName));
     if (place) where.append(upcomingNode("span", "ue-place", place));
     if (where.childNodes.length) li.append(where);
+    const official = upcomingTicketmasterUrl(ev.url);
+    if (official) {
+      const link = upcomingNode("a", "ue-source", "Ver en Ticketmaster");
+      link.href = official;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      li.append(link);
+    }
     list.append(li);
   });
   body.append(list, upcomingNode("p", "ue-note", "Las fechas son informativas y no implican disponibilidad de entradas en SoundPass."), upcomingNode("p", "ue-source", "Fuente: Ticketmaster · Información de fechas"));
@@ -445,20 +559,22 @@ async function loadUpcomingEvents(id) {
   if (upcomingView.concertId === id) return; // ya cargada o en curso: sin consultas duplicadas ni continuas
   upcomingClear(); upcomingView.concertId = id;
   const req = upcomingView.req, controller = upcomingView.controller = new AbortController(), current = () => req === upcomingView.req && state.selectedConcertId === id;
+  const display = (events, text) => {
+    const merged = upcomingArtistEvents(id, events);
+    if (merged.length) renderUpcoming("list", { events: merged });
+    else renderUpcoming("notice", { text });
+  };
   root.hidden = false; renderUpcoming("loading");
   try {
     const data = await api(`/concerts/${id}/upcoming-events`, { signal: controller.signal });
     if (!current()) return; // respuesta tardía de otro concierto: se descarta
-    if (!data || typeof data !== "object" || Number(data.concert_id) !== id) return renderUpcoming("notice", { text: UPCOMING_MSG.error });
+    if (!data || typeof data !== "object" || Number(data.concert_id) !== id) return display([], UPCOMING_MSG.error);
     const msg = upcomingText(data.message);
-    if (data.status === "ok") {
-      const events = (Array.isArray(data.events) ? data.events : []).filter(ev => ev && typeof ev === "object" && /^\d{4}-\d{2}-\d{2}/.test(String(ev.date || ""))).slice(0, 10); // mismo orden recibido
-      events.length ? renderUpcoming("list", { events }) : renderUpcoming("notice", { text: msg || UPCOMING_MSG.no_events });
-    } else if (data.status === "no_events" || data.status === "not_found" || data.status === "ambiguous") renderUpcoming("notice", { text: msg || UPCOMING_MSG[data.status] });
-    else renderUpcoming("notice", { text: UPCOMING_MSG.error });
+    if (data.status === "ok") display(Array.isArray(data.events) ? data.events : [], msg || UPCOMING_MSG.no_events);
+    else display([], msg || UPCOMING_MSG[data.status] || UPCOMING_MSG.error);
   } catch (error) {
-    if (error?.name === "AbortError" || !current()) return; // cancelar no es un error
-    renderUpcoming("notice", { text: error.status === 404 ? UPCOMING_MSG.concert_not_found : error.status === 502 || error.status === 503 ? UPCOMING_MSG.unavailable : UPCOMING_MSG.error });
+    if (error?.name === "AbortError" || !current()) return;
+    display([], error.status === 404 ? UPCOMING_MSG.concert_not_found : error.status === 502 || error.status === 503 ? UPCOMING_MSG.unavailable : UPCOMING_MSG.error);
   }
 }
  

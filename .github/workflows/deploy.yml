@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-          source: "backend/src,backend/requirements.txt,backend/Dockerfile,backend/.dockerignore,frontend/index.html,frontend/style.css,frontend/script.js,database/schema.sql,database/seed.sql,docker-compose.yml"
+          source: "backend/src,backend/requirements.txt,backend/Dockerfile,backend/.dockerignore,frontend/index.html,frontend/style.css,frontend/script.js,database/schema.sql,database/seed.sql,database/migrations,docker-compose.yml"
           target: ${{ secrets.VM_APP_DIR }}
 
       - name: Reconstruir y reiniciar los contenedores
@@ -58,10 +58,12 @@ jobs:
           script: |
             set -e
             cd "${{ secrets.VM_APP_DIR }}"
-            docker compose up -d --build
+            docker compose --env-file backend/.env up -d db
+            docker compose --env-file backend/.env run --rm migrate
+            docker compose --env-file backend/.env up -d --build
             # Lista explícita; nginx también limita los recursos públicos.
             install -m 644 frontend/index.html frontend/style.css frontend/script.js /var/www/soundpass/
-            docker compose ps
+            docker compose --env-file backend/.env ps
 
       - name: Verificar que la app responde
         env:

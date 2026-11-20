@@ -115,6 +115,8 @@ def build_tickets_pdf(
         return safe(value)
 
     def format_time(value):
+        if value is None:
+            return "Hora por confirmar"
         if hasattr(value, "strftime"):
             return value.strftime("%H:%M")
         return safe(value)

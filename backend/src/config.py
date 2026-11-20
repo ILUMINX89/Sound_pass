@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     )
 
     ticketmaster_api_key: str = ""
+    ticketmaster_scope: Literal["country", "artist_origin"] = "country"
+    ticketmaster_artist_origins: str = "US,MX,CO,AR,PR"
+    ticketmaster_artists_per_origin: int = Field(default=15, ge=1, le=20)
+    ticketmaster_artist_min_sitelinks: int = Field(default=20, ge=0)
+    ticketmaster_country_code: str = Field(default="CO", pattern="^[A-Z]{2}$")
+    ticketmaster_sync_interval_seconds: int = Field(default=1800, ge=60)
+    ticketmaster_window_days: int = Field(default=365, ge=1, le=730)
     ollama_base_url: str = ""
     ollama_model: str = "qwen2.5:1.5b"
     ollama_timeout_seconds: float = Field(default=55, gt=0, le=55)
@@ -32,6 +39,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[1] / ".env", env_file_encoding="utf-8", extra="ignore", hide_input_in_errors=True
     )
+
+    @property
+    def catalog_key(self) -> str:
+        return "GLOBAL_ARTISTS" if self.ticketmaster_scope == "artist_origin" else self.ticketmaster_country_code
 
     @property
     def is_public(self) -> bool:

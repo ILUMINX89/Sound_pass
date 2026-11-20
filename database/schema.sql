@@ -3,12 +3,6 @@
 -- PostgreSQL database schema
 -- ============================================================
 
-DROP TABLE IF EXISTS order_items CASCADE;
-DROP TABLE IF EXISTS orders CASCADE;
-DROP TABLE IF EXISTS ticket_types CASCADE;
-DROP TABLE IF EXISTS concerts CASCADE;
-DROP TABLE IF EXISTS venues CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
 
 -- ------------------------------------------------------------
 -- users
@@ -116,3 +110,29 @@ CREATE TABLE IF NOT EXISTS issued_tickets (
     CONSTRAINT ck_issued_tickets_sequence_positive
         CHECK (sequence_number > 0)
 );
+BEGIN;
+SELECT pg_advisory_xact_lock(7294101);
+ALTER TABLE venues ADD COLUMN IF NOT EXISTS external_id VARCHAR(255) UNIQUE;
+ALTER TABLE concerts ALTER COLUMN artist TYPE TEXT;
+ALTER TABLE concerts ALTER COLUMN tour_name TYPE TEXT;
+ALTER TABLE concerts ALTER COLUMN event_time DROP NOT NULL;
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS source VARCHAR(30) NOT NULL DEFAULT 'legacy';
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS external_id VARCHAR(255) UNIQUE;
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ;
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS timezone VARCHAR(100);
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS catalog_status VARCHAR(30) NOT NULL DEFAULT 'inactive';
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS official_url TEXT;
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS provider_price NUMERIC(18,2);
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS currency VARCHAR(3);
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS country_code VARCHAR(2);
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS synced_at TIMESTAMPTZ;
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS missing_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS catalog_scope VARCHAR(64) NOT NULL DEFAULT 'CO';
+ALTER TABLE concerts ADD COLUMN IF NOT EXISTS artist_provenance TEXT;
+CREATE INDEX IF NOT EXISTS idx_catalog_visibility ON concerts(source,country_code,catalog_status,event_date);
+CREATE TABLE IF NOT EXISTS catalog_sync (
+ country_code VARCHAR(2) PRIMARY KEY, last_success_at TIMESTAMPTZ,
+ window_start TIMESTAMPTZ, window_end TIMESTAMPTZ, event_count INTEGER NOT NULL DEFAULT 0
+);
+ALTER TABLE catalog_sync ALTER COLUMN country_code TYPE VARCHAR(64);
+COMMIT;

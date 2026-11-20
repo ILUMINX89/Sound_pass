@@ -24,7 +24,7 @@ git clone https://github.com/ILUMINX89/Sound_pass.git
 cd Sound_pass
 git config user.name "Tu Nombre"
 git config user.email "el-correo-de-tu-github"
-docker compose up -d --build
+docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build
 ```
 
 | Qué | Dónde |
@@ -34,7 +34,7 @@ docker compose up -d --build
 | Frontend | abrir `frontend/index.html` con Live Server |
 
 La base de datos se crea y se llena sola con `database/schema.sql` y `database/seed.sql` la primera vez.
-Para empezar desde cero: `docker compose down -v` y otra vez `docker compose up -d --build`.
+Para empezar desde cero: `docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.local.yml down -v` y otra vez `docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build`.
 
 > Nunca subas contraseñas ni claves reales. `.env.example` solo lleva valores de ejemplo; los reales van en `backend/.env` (que Git ignora) o en los *Secrets* del repositorio.
 
@@ -112,7 +112,7 @@ Reglas:
 
 Al revisar un PR:
 
-- Descarga la rama y pruébala: `git fetch && git checkout nombre-de-la-rama && docker compose up -d --build`.
+- Descarga la rama y pruébala: `git fetch && git checkout nombre-de-la-rama && docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build`.
 - Revisa los criterios de aceptación de la historia uno por uno.
 - Si algo falta, usa **Request changes** con un comentario concreto (qué, dónde y por qué).
 

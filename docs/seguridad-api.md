@@ -11,8 +11,7 @@ o contiene orígenes HTTPS explícitos para acceso cruzado.
 
 Compose versionado usa nginx en el host, API en `127.0.0.1:8000` y PostgreSQL
 solo en la red de Compose. Conserva `pgdata` y los montajes de inicialización.
-`deploy/env.example` documenta variables ficticias; copiar a `.env` privado de
-Compose. No copiar `backend/.env` a la VM ni a la raíz pública. PostgreSQL existente
+`deploy/env.example` documenta variables ficticias. Configura `backend/.env` directamente en la VM y mantenlo fuera de la raíz pública. PostgreSQL existente
 no cambia su contraseña al cambiar POSTGRES_PASSWORD: coordinar la credencial
 real y DATABASE_URL sin reinicializar ni borrar el volumen. La URL debe usar el
 servicio `db` y codificar los caracteres reservados de usuario/password.
@@ -67,7 +66,7 @@ por lo que errores inesperados no entregan una traza al cliente.
   rotar JWT invalida sesiones. Mantener las integraciones en backend.
 - Revisar Docker y reglas IPv4/IPv6 tanto del host como de la nube: solo nginx
   público (80 redirección, 443 HTTPS); SSH limitado según política de DevOps.
-- Validar `docker compose config --quiet` con el entorno efectivo y `nginx -t`
+- Validar `docker compose --env-file backend/.env config --quiet` con el entorno efectivo y `nginx -t`
   con certificado real. Si nginx resulta estar en Docker, usar servicio `api:8000`
   en red interna sin publicar el puerto; esta plantilla es para nginx en host.
 - Respaldar configuración/BD, acordar reversión a imagen y configuración previas

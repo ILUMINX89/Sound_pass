@@ -62,6 +62,9 @@ def create_order(
     if not concert:
         raise HTTPException(status_code=404, detail="Concierto no encontrado")
 
+    if concert.source == "ticketmaster":
+        raise HTTPException(409, "Este evento se compra en Ticketmaster; no emite boletos SoundPass.")
+
     subtotal = 0
     total_qty = 0
     order_items: list[models.OrderItem] = []

@@ -17,13 +17,21 @@ services:
 
   api:
     build: ./backend
-    environment:
+    environment: &backend_env
       APP_ENV: ${APP_ENV:-production}
       DATABASE_URL: ${DATABASE_URL:?Configure DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY:?Configure SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      TICKETMASTER_SCOPE: ${TICKETMASTER_SCOPE:-country}
+      TICKETMASTER_ARTIST_ORIGINS: ${TICKETMASTER_ARTIST_ORIGINS:-US,MX,CO,AR,PR}
+      TICKETMASTER_ARTISTS_PER_ORIGIN: ${TICKETMASTER_ARTISTS_PER_ORIGIN:-15}
+      TICKETMASTER_ARTIST_MIN_SITELINKS: ${TICKETMASTER_ARTIST_MIN_SITELINKS:-20}
+      TICKETMASTER_COUNTRY_CODE: ${TICKETMASTER_COUNTRY_CODE:-CO}
+      TICKETMASTER_WINDOW_DAYS: ${TICKETMASTER_WINDOW_DAYS:-365}
+      TICKETMASTER_SYNC_INTERVAL_SECONDS: ${TICKETMASTER_SYNC_INTERVAL_SECONDS:-1800}
       TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:1.5b}
@@ -33,6 +41,33 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    image: postgres:16
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:?Configure POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:?Configure POSTGRES_DB}
+    volumes:
+      - ./database/migrations:/migrations:ro
+    command: ["sh", "-ec", "for file in /migrations/*.sql; do psql -v ON_ERROR_STOP=1 -f $$file; done"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  catalog-sync:
+    build: ./backend
+    environment: *backend_env
+    command: ["python", "-m", "src.sync_ticketmaster"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:

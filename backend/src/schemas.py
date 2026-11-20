@@ -61,12 +61,18 @@ class ConcertListOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     artist: str
+    source: str = "legacy"
+    official_url: str | None = None
+    catalog_status: str | None = None
+    currency: str | None = None
+    timezone: str | None = None
+    starts_at: datetime | None = None
     tour_name: str
     genre: str
     event_date: date
-    event_time: time
+    event_time: time | None
     venue: VenueOut
-    price_from: Decimal
+    price_from: Decimal | None = None
     tickets_available: int | None = None
     image_url: str | None = None
 
@@ -75,14 +81,21 @@ class ConcertDetailOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     artist: str
+    source: str = "legacy"
+    official_url: str | None = None
+    catalog_status: str | None = None
+    currency: str | None = None
+    timezone: str | None = None
+    starts_at: datetime | None = None
     tour_name: str
     genre: str
     event_date: date
-    event_time: time
+    event_time: time | None
     description: str | None
     image_url: str | None
     venue: VenueOut
     ticket_types: list[TicketTypeOut]
+    price_from: Decimal | None = None
 
 
 # ============================================================
@@ -130,7 +143,7 @@ class ConcertCreate(BaseModel):
     genre: str
     venue_id: int
     event_date: date
-    event_time: time
+    event_time: time | None
     description: str | None = None
     image_url: str | None = None
 

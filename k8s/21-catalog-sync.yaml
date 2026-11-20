@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: soundpass-catalog-sync
+  namespace: soundpass
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: soundpass-catalog-sync}
+  template:
+    metadata:
+      labels: {app: soundpass-catalog-sync}
+    spec:
+      imagePullSecrets:
+        - name: ghcr-cred
+      containers:
+        - name: catalog-sync
+          image: ghcr.io/iluminx89/sound_pass-api:latest
+          command: ["python", "-m", "src.sync_ticketmaster"]
+          envFrom:
+            - configMapRef: {name: soundpass-config}
+            - secretRef: {name: soundpass-secrets}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
