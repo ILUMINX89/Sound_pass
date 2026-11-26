@@ -1898,3 +1898,432 @@ img, svg, video { max-width: 100%; }
   .ga-skel { animation: none; }
 }
 
+.detail-layout[hidden] { display: none; }
+#detail-load:empty { display: none; }
+#official-seatmap { margin-top: 1rem; }
+#official-seatmap img {
+  display: block;
+  max-width: 100%;
+  max-height: 28rem;
+  object-fit: contain;
+  margin: .5rem 0;
+}
+
+/* ===== Recomendaciones "Para ti" ===== */
+.for-you__profile { margin: -8px 0 16px; color: var(--text-dim); font-size: 13.5px; }
+.prefs-invite { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 20px; border: 1px solid var(--border-soft); border-radius: 14px; background: rgba(240, 73, 106, .08); }
+.prefs-invite strong { display: block; }
+.prefs-invite span { color: var(--text-dim); font-size: 13.5px; }
+
+/* ===== Cuestionario de gustos en tres pasos ===== */
+.prefs-modal {
+  max-width: 460px;
+  width: 100%;
+  padding: 20px 22px 18px;
+  gap: 14px;
+  text-align: left;
+  align-items: stretch;
+  background: linear-gradient(180deg, #1b0b12 0%, #11060b 100%);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+}
+.prefs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.prefs-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.prefs-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.prefs-skip-link {
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+  font: 500 14px var(--font-body);
+  padding: 8px 10px;
+  min-height: 40px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.prefs-skip-link:hover, .prefs-skip-link:focus-visible { color: var(--text); background: rgba(255, 255, 255, .06); }
+.prefs-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, .03);
+  color: var(--text-dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.prefs-close-btn:hover, .prefs-close-btn:focus-visible { background: var(--wine-500); color: #fff; border-color: var(--wine-400); }
+
+.prefs-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.prefs-progress__track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+}
+.prefs-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--wine-500), var(--wine-400));
+  transition: width .22s ease;
+}
+.prefs-progress__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.prefs-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  gap: 12px;
+}
+.prefs-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+.prefs-step[hidden] { display: none; }
+.prefs-step__title {
+  margin: 2px 0 6px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--text);
+}
+.prefs-step__title:focus { outline: none; }
+.prefs-step__sub {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+/* Paso 1: Géneros */
+.prefs-genre-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.prefs-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(59, 10, 23, .45);
+  color: var(--text);
+  font: 500 14px var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+.prefs-chip:hover:not(:disabled) { border-color: var(--wine-400); background: rgba(163, 22, 47, .35); }
+.prefs-chip[aria-pressed="true"] {
+  background: linear-gradient(135deg, #e53558 0%, #c81d42 100%);
+  border-color: var(--wine-400);
+  color: #fff;
+  font-weight: 600;
+}
+.prefs-chip:disabled { opacity: .42; cursor: not-allowed; }
+#prefs-modal [hidden] { display: none !important; }
+.prefs-chip__check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.prefs-chip__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prefs-counter {
+  margin: 16px 0 4px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+.prefs-counter--left { text-align: left; margin: 10px 0 8px; font-size: 12.5px; }
+
+/* Paso 2: Artistas */
+.prefs-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-dim);
+}
+.prefs-search:focus-within { border-color: var(--wine-400); box-shadow: 0 0 0 2px rgba(240, 73, 106, .2); }
+.prefs-search input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 400 14.5px var(--font-body);
+  padding: 10px 0;
+  outline: none;
+}
+.prefs-search input::placeholder { color: var(--text-faint); }
+.prefs-selected-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.prefs-selected-row:empty { display: none; }
+.prefs-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 73, 106, .45);
+  background: rgba(163, 22, 47, .38);
+  color: #fff;
+  font: 500 13.5px var(--font-body);
+}
+.prefs-selected-chip__remove {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.prefs-selected-chip__remove:hover, .prefs-selected-chip__remove:focus-visible { background: rgba(255, 255, 255, .14); color: #fff; }
+.prefs-artist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 268px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+.prefs-artist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 8px 10px 8px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: rgba(59, 10, 23, .36);
+  transition: border-color .15s, background .15s;
+}
+.prefs-artist-row:hover { border-color: var(--border); background: rgba(59, 10, 23, .58); }
+.prefs-artist-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.prefs-artist-name {
+  flex: 1;
+  min-width: 0;
+  font: 600 15px var(--font-body);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prefs-artist-add {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, .04);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.prefs-artist-add:hover:not(:disabled), .prefs-artist-add:focus-visible:not(:disabled) {
+  background: var(--wine-500);
+  border-color: var(--wine-400);
+  color: #fff;
+}
+.prefs-artist-add:disabled { opacity: .35; cursor: not-allowed; }
+.prefs-empty { margin: 8px 0; font-size: 13.5px; color: var(--text-dim); text-align: center; padding: 14px 8px; }
+
+/* Paso 3: Sonido */
+.prefs-scales-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(59, 10, 23, .35);
+  color: var(--text);
+  font: 500 14px var(--font-body);
+  cursor: pointer;
+}
+.prefs-scales-toggle input { width: 18px; height: 18px; accent-color: var(--wine-500); cursor: pointer; }
+.prefs-scales-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.prefs-scales-list.is-disabled { opacity: .45; }
+.prefs-scale-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: rgba(59, 10, 23, .36);
+}
+.prefs-scale-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.prefs-scale-card__label {
+  font: 700 16px var(--font-display);
+  color: var(--text);
+}
+.prefs-scale-card__val {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.prefs-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--wine-400) var(--fill, 50%), rgba(255, 255, 255, .14) var(--fill, 50%));
+  outline: none;
+  cursor: pointer;
+}
+.prefs-range:disabled { cursor: not-allowed; }
+.prefs-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--wine-400);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+  cursor: pointer;
+}
+.prefs-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--wine-400);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+  cursor: pointer;
+}
+.prefs-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(240, 73, 106, .4); }
+.prefs-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(240, 73, 106, .4); }
+.prefs-scale-card__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* Pie fijo del diálogo */
+.prefs-footer {
+  flex-shrink: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prefs-footer .form-message { margin: 0; min-height: 0; }
+.prefs-footer .form-message:empty { display: none; }
+.prefs-footer__actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+.prefs-footer__actions [hidden] { display: none; }
+.prefs-btn-back {
+  flex: 0 0 36%;
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(59, 10, 23, .45);
+  color: var(--text);
+  font-weight: 600;
+}
+.prefs-btn-back:hover { background: rgba(59, 10, 23, .75); border-color: var(--wine-400); }
+.prefs-btn-next, .prefs-btn-save {
+  flex: 1 1 auto;
+  min-height: 46px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+.prefs-modal button:focus-visible, .prefs-modal input:focus-visible {
+  outline: 2px solid var(--wine-300);
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .prefs-modal { padding: 16px 16px 14px; border-radius: 18px; }
+  .prefs-step__title { font-size: 22px; }
+  .prefs-chip { padding: 10px 12px; font-size: 13.5px; }
+  .prefs-artist-list { max-height: 220px; }
+}

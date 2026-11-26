@@ -1,0 +1,540 @@
+{
+ "artists_total": 131,
+ "artists_with_vector": 127,
+ "artists_without_vector": 4,
+ "catalog_coverage": {
+  "artists": 8,
+  "coverage": 1.0,
+  "detail": [
+   {
+    "artist": "Bob Dylan",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "Camilo",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "Chris de Burgh",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "Don Omar",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "José González",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "Karol G",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "Lila Downs",
+    "signal": "profile_vector"
+   },
+   {
+    "artist": "Paulo Londra",
+    "signal": "profile_vector"
+   }
+  ],
+  "genre_fallback": 0,
+  "none": 0,
+  "profile_vector": 8,
+  "with_own_vector": 1.0
+ },
+ "chosen": {
+  "cluster_sizes": [
+   19,
+   37,
+   43
+  ],
+  "config": "scaled_pca2",
+  "k": 3,
+  "min_cluster_size": 19,
+  "silhouette_eval": 0.4622596443,
+  "silhouette_train": 0.4295369814,
+  "silhouette_train_mean_seeds": 0.4295369814,
+  "stability_ari_seeds": 1.0,
+  "stability_ari_subsample": 0.9858479499
+ },
+ "comparison": [
+  {
+   "cluster_sizes": [
+    21,
+    78
+   ],
+   "config": "scaled_4d",
+   "k": 2,
+   "min_cluster_size": 21,
+   "silhouette_eval": 0.4083660694,
+   "silhouette_train": 0.4614992826,
+   "silhouette_train_mean_seeds": 0.4614992826,
+   "stability_ari_seeds": 1.0,
+   "stability_ari_subsample": 0.9818528799
+  },
+  {
+   "cluster_sizes": [
+    19,
+    35,
+    45
+   ],
+   "config": "scaled_4d",
+   "k": 3,
+   "min_cluster_size": 19,
+   "silhouette_eval": 0.3690944324,
+   "silhouette_train": 0.3611587828,
+   "silhouette_train_mean_seeds": 0.3611587828,
+   "stability_ari_seeds": 1.0,
+   "stability_ari_subsample": 0.9235074639
+  },
+  {
+   "cluster_sizes": [
+    13,
+    15,
+    34,
+    37
+   ],
+   "config": "scaled_4d",
+   "k": 4,
+   "min_cluster_size": 13,
+   "silhouette_eval": 0.2349387824,
+   "silhouette_train": 0.3527632506,
+   "silhouette_train_mean_seeds": 0.3524145046,
+   "stability_ari_seeds": 0.9754905521,
+   "stability_ari_subsample": 0.6923983378
+  },
+  {
+   "cluster_sizes": [
+    12,
+    15,
+    15,
+    26,
+    31
+   ],
+   "config": "scaled_4d",
+   "k": 5,
+   "min_cluster_size": 12,
+   "silhouette_eval": 0.222254871,
+   "silhouette_train": 0.3403408003,
+   "silhouette_train_mean_seeds": 0.3416366416,
+   "stability_ari_seeds": 0.9106030833,
+   "stability_ari_subsample": 0.8149030807
+  },
+  {
+   "cluster_sizes": [
+    9,
+    11,
+    15,
+    17,
+    21,
+    26
+   ],
+   "config": "scaled_4d",
+   "k": 6,
+   "min_cluster_size": 9,
+   "silhouette_eval": 0.2240588286,
+   "silhouette_train": 0.3506895975,
+   "silhouette_train_mean_seeds": 0.3491041538,
+   "stability_ari_seeds": 0.8583065412,
+   "stability_ari_subsample": 0.828703967
+  },
+  {
+   "cluster_sizes": [
+    6,
+    7,
+    9,
+    15,
+    15,
+    23,
+    24
+   ],
+   "config": "scaled_4d",
+   "k": 7,
+   "min_cluster_size": 6,
+   "silhouette_eval": 0.2509915511,
+   "silhouette_train": 0.3365779626,
+   "silhouette_train_mean_seeds": 0.3411048471,
+   "stability_ari_seeds": 0.8252951143,
+   "stability_ari_subsample": 0.7432501056
+  },
+  {
+   "cluster_sizes": [
+    6,
+    7,
+    8,
+    12,
+    15,
+    16,
+    16,
+    19
+   ],
+   "config": "scaled_4d",
+   "k": 8,
+   "min_cluster_size": 6,
+   "silhouette_eval": 0.2703747599,
+   "silhouette_train": 0.3365352444,
+   "silhouette_train_mean_seeds": 0.3335191988,
+   "stability_ari_seeds": 0.8168297356,
+   "stability_ari_subsample": 0.7874789237
+  },
+  {
+   "cluster_sizes": [
+    21,
+    78
+   ],
+   "config": "scaled_pca2",
+   "k": 2,
+   "min_cluster_size": 21,
+   "silhouette_eval": 0.4732926241,
+   "silhouette_train": 0.5157579993,
+   "silhouette_train_mean_seeds": 0.5157579993,
+   "stability_ari_seeds": 1.0,
+   "stability_ari_subsample": 0.9908879041
+  },
+  {
+   "cluster_sizes": [
+    19,
+    37,
+    43
+   ],
+   "config": "scaled_pca2",
+   "k": 3,
+   "min_cluster_size": 19,
+   "silhouette_eval": 0.4622596443,
+   "silhouette_train": 0.4295369814,
+   "silhouette_train_mean_seeds": 0.4295369814,
+   "stability_ari_seeds": 1.0,
+   "stability_ari_subsample": 0.9858479499
+  },
+  {
+   "cluster_sizes": [
+    14,
+    19,
+    33,
+    33
+   ],
+   "config": "scaled_pca2",
+   "k": 4,
+   "min_cluster_size": 14,
+   "silhouette_eval": 0.3410405411,
+   "silhouette_train": 0.3939264683,
+   "silhouette_train_mean_seeds": 0.3975766433,
+   "stability_ari_seeds": 0.8989317347,
+   "stability_ari_subsample": 0.6738076025
+  },
+  {
+   "cluster_sizes": [
+    8,
+    10,
+    15,
+    33,
+    33
+   ],
+   "config": "scaled_pca2",
+   "k": 5,
+   "min_cluster_size": 8,
+   "silhouette_eval": 0.2889607216,
+   "silhouette_train": 0.4358896497,
+   "silhouette_train_mean_seeds": 0.435463729,
+   "stability_ari_seeds": 0.9560772665,
+   "stability_ari_subsample": 0.7851616527
+  },
+  {
+   "cluster_sizes": [
+    8,
+    9,
+    15,
+    17,
+    20,
+    30
+   ],
+   "config": "scaled_pca2",
+   "k": 6,
+   "min_cluster_size": 8,
+   "silhouette_eval": 0.3243233299,
+   "silhouette_train": 0.3997726163,
+   "silhouette_train_mean_seeds": 0.4009197299,
+   "stability_ari_seeds": 0.7144536988,
+   "stability_ari_subsample": 0.6719060488
+  },
+  {
+   "cluster_sizes": [
+    7,
+    8,
+    8,
+    11,
+    17,
+    20,
+    28
+   ],
+   "config": "scaled_pca2",
+   "k": 7,
+   "min_cluster_size": 7,
+   "silhouette_eval": 0.375894782,
+   "silhouette_train": 0.3878843259,
+   "silhouette_train_mean_seeds": 0.3927015217,
+   "stability_ari_seeds": 0.8072831063,
+   "stability_ari_subsample": 0.7404291106
+  },
+  {
+   "cluster_sizes": [
+    7,
+    7,
+    8,
+    9,
+    12,
+    18,
+    19,
+    19
+   ],
+   "config": "scaled_pca2",
+   "k": 8,
+   "min_cluster_size": 7,
+   "silhouette_eval": 0.3706849047,
+   "silhouette_train": 0.3925781089,
+   "silhouette_train_mean_seeds": 0.3904766621,
+   "stability_ari_seeds": 0.7429860176,
+   "stability_ari_subsample": 0.6395023341
+  }
+ ],
+ "eval_artists": 28,
+ "library_versions": {
+  "numpy": "2.2.6",
+  "scikit-learn": "1.7.2"
+ },
+ "profiles_sha256": "3e3d04df6d8439e3209ad5d6592a6b858beccc8c70dcff9d08decf4833a72f3b",
+ "quality_gate_passed": true,
+ "reference_repo_metrics": {
+  "k": 3,
+  "note": "otro dataset (Spotify) y otra base; no comparable directamente",
+  "silhouette": 0.423
+ },
+ "selection_rule": "max promedio de silueta (entrenamiento y evaluacion) entre ajustes con k >= 3, estabilidad ARI (semillas y submuestras) >= 0.8 y grupo minimo >= max(3, 5% del entrenamiento); empate: 4-D, k menor",
+ "top5_by_config_best_k": {
+  "scaled_4d": {
+   "k": 2,
+   "top5": {
+    "mean_precision_at_5": {
+     "distance_only": 0.64,
+     "genre_only": 0.8,
+     "kmeans_then_distance": 0.64,
+     "random_expected": 0.2285714286
+    },
+    "persona_count": 5,
+    "personas": [
+     {
+      "persona": "folk_acustico",
+      "precision_at_5": 0.6,
+      "relevant_in_eval": 4,
+      "top5": [
+       "José González",
+       "Norah Jones",
+       "Billie Eilish",
+       "Bob Dylan",
+       "Alejandro Sanz"
+      ]
+     },
+     {
+      "persona": "urbano_bailable",
+      "precision_at_5": 0.6,
+      "relevant_in_eval": 10,
+      "top5": [
+       "Bomba Estéreo",
+       "Don Omar",
+       "Sabrina Carpenter",
+       "Shakira",
+       "Rauw Alejandro"
+      ]
+     },
+     {
+      "persona": "rock_pesado",
+      "precision_at_5": 0.8,
+      "relevant_in_eval": 6,
+      "top5": [
+       "Iron Maiden",
+       "Guns N' Roses",
+       "The Strokes",
+       "Skrillex",
+       "Queen"
+      ]
+     },
+     {
+      "persona": "pop_electronico",
+      "precision_at_5": 0.4,
+      "relevant_in_eval": 7,
+      "top5": [
+       "Don Omar",
+       "Bomba Estéreo",
+       "Sabrina Carpenter",
+       "Shakira",
+       "Rauw Alejandro"
+      ]
+     },
+     {
+      "persona": "intimo_melancolico",
+      "precision_at_5": 0.8,
+      "relevant_in_eval": 5,
+      "top5": [
+       "Billie Eilish",
+       "José González",
+       "Norah Jones",
+       "Alicia Keys",
+       "Bob Dylan"
+      ]
+     }
+    ],
+    "personas_with_all_top5_relevant": 0
+   }
+  },
+  "scaled_pca2": {
+   "k": 2,
+   "top5": {
+    "mean_precision_at_5": {
+     "distance_only": 0.6,
+     "genre_only": 0.8,
+     "kmeans_then_distance": 0.6,
+     "random_expected": 0.2285714286
+    },
+    "persona_count": 5,
+    "personas": [
+     {
+      "persona": "folk_acustico",
+      "precision_at_5": 0.6,
+      "relevant_in_eval": 4,
+      "top5": [
+       "José González",
+       "Norah Jones",
+       "Billie Eilish",
+       "Bob Dylan",
+       "Alejandro Sanz"
+      ]
+     },
+     {
+      "persona": "urbano_bailable",
+      "precision_at_5": 0.4,
+      "relevant_in_eval": 10,
+      "top5": [
+       "Bomba Estéreo",
+       "Los Fabulosos Cadillacs",
+       "Don Omar",
+       "Sabrina Carpenter",
+       "Shakira"
+      ]
+     },
+     {
+      "persona": "rock_pesado",
+      "precision_at_5": 0.8,
+      "relevant_in_eval": 6,
+      "top5": [
+       "Iron Maiden",
+       "Guns N' Roses",
+       "Skrillex",
+       "The Strokes",
+       "Queen"
+      ]
+     },
+     {
+      "persona": "pop_electronico",
+      "precision_at_5": 0.4,
+      "relevant_in_eval": 7,
+      "top5": [
+       "Los Fabulosos Cadillacs",
+       "Bomba Estéreo",
+       "Don Omar",
+       "Shakira",
+       "Sabrina Carpenter"
+      ]
+     },
+     {
+      "persona": "intimo_melancolico",
+      "precision_at_5": 0.8,
+      "relevant_in_eval": 5,
+      "top5": [
+       "Billie Eilish",
+       "José González",
+       "Bob Dylan",
+       "Norah Jones",
+       "Alicia Keys"
+      ]
+     }
+    ],
+    "personas_with_all_top5_relevant": 0
+   }
+  }
+ },
+ "top5_selected": {
+  "mean_precision_at_5": {
+   "distance_only": 0.6,
+   "genre_only": 0.8,
+   "kmeans_then_distance": 0.6,
+   "random_expected": 0.2285714286
+  },
+  "persona_count": 5,
+  "personas": [
+   {
+    "persona": "folk_acustico",
+    "precision_at_5": 0.6,
+    "relevant_in_eval": 4,
+    "top5": [
+     "José González",
+     "Norah Jones",
+     "Billie Eilish",
+     "Bob Dylan",
+     "Alejandro Sanz"
+    ]
+   },
+   {
+    "persona": "urbano_bailable",
+    "precision_at_5": 0.4,
+    "relevant_in_eval": 10,
+    "top5": [
+     "Bomba Estéreo",
+     "Los Fabulosos Cadillacs",
+     "Don Omar",
+     "Sabrina Carpenter",
+     "Shakira"
+    ]
+   },
+   {
+    "persona": "rock_pesado",
+    "precision_at_5": 0.8,
+    "relevant_in_eval": 6,
+    "top5": [
+     "Iron Maiden",
+     "Guns N' Roses",
+     "Skrillex",
+     "The Strokes",
+     "Queen"
+    ]
+   },
+   {
+    "persona": "pop_electronico",
+    "precision_at_5": 0.4,
+    "relevant_in_eval": 7,
+    "top5": [
+     "Los Fabulosos Cadillacs",
+     "Bomba Estéreo",
+     "Don Omar",
+     "Shakira",
+     "Sabrina Carpenter"
+    ]
+   },
+   {
+    "persona": "intimo_melancolico",
+    "precision_at_5": 0.8,
+    "relevant_in_eval": 5,
+    "top5": [
+     "Billie Eilish",
+     "José González",
+     "Bob Dylan",
+     "Norah Jones",
+     "Alicia Keys"
+    ]
+   }
+  ],
+  "personas_with_all_top5_relevant": 0
+ },
+ "train_artists": 99
+}

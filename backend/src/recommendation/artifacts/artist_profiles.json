@@ -1,0 +1,2046 @@
+{
+ "artists": [
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "hip_hop"
+   ],
+   "id": "art_bad_bunny",
+   "name": "Bad Bunny",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.81,
+    0.68,
+    0.29,
+    0.56
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_karol_g",
+   "name": "Karol G",
+   "ticketmaster_ids": [
+    "K8vZ917p3-V"
+   ],
+   "vector": [
+    0.8,
+    0.74,
+    0.22,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_daddy_yankee",
+   "name": "Daddy Yankee",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.8,
+    0.8,
+    0.12,
+    0.68
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_don_omar",
+   "name": "Don Omar",
+   "ticketmaster_ids": [
+    "K8vZ9175yK0"
+   ],
+   "vector": [
+    0.78,
+    0.84,
+    0.1,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_j_balvin",
+   "name": "J Balvin",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.8,
+    0.74,
+    0.22,
+    0.66
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_maluma",
+   "name": "Maluma",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.72,
+    0.25,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_ozuna",
+   "name": "Ozuna",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.75,
+    0.66,
+    0.28,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "hip_hop"
+   ],
+   "id": "art_anuel_aa",
+   "name": "Anuel AA",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.66,
+    0.24,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_feid",
+   "name": "Feid",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.78,
+    0.72,
+    0.2,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "hip_hop"
+   ],
+   "id": "art_myke_towers",
+   "name": "Myke Towers",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.62,
+    0.25,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_rauw_alejandro",
+   "name": "Rauw Alejandro",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.7,
+    0.2,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_peso_pluma",
+   "name": "Peso Pluma",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.62,
+    0.35,
+    0.58
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_natanael_cano",
+   "name": "Natanael Cano",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.62,
+    0.35,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "hip_hop"
+   ],
+   "id": "art_duki",
+   "name": "Duki",
+   "ticketmaster_ids": [
+    "K8vZ917bvf7"
+   ],
+   "vector": [
+    0.78,
+    0.72,
+    0.15,
+    0.48
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "hip_hop"
+   ],
+   "id": "art_paulo_londra",
+   "name": "Paulo Londra",
+   "ticketmaster_ids": [
+    "K8vZ917bAfV"
+   ],
+   "vector": [
+    0.72,
+    0.66,
+    0.28,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_nicky_jam",
+   "name": "Nicky Jam",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.75,
+    0.15,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_wisin_yandel",
+   "name": "Wisin & Yandel",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.82,
+    0.1,
+    0.68
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_becky_g",
+   "name": "Becky G",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.74,
+    0.78,
+    0.15,
+    0.7
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_ryan_castro",
+   "name": "Ryan Castro",
+   "ticketmaster_ids": [],
+   "vector": null
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_blessd",
+   "name": "Blessd",
+   "ticketmaster_ids": [],
+   "vector": null
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_shakira",
+   "name": "Shakira",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.74,
+    0.25,
+    0.64
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_camilo",
+   "name": "Camilo",
+   "ticketmaster_ids": [
+    "K8vZ917_FzV"
+   ],
+   "vector": [
+    0.7,
+    0.6,
+    0.4,
+    0.7
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "rock"
+   ],
+   "id": "art_juanes",
+   "name": "Juanes",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.6,
+    0.72,
+    0.35,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "world"
+   ],
+   "id": "art_carlos_vives",
+   "name": "Carlos Vives",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.74,
+    0.8,
+    0.35,
+    0.85
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_sebastian_yatra",
+   "name": "Sebastián Yatra",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.62,
+    0.38,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_ricky_martin",
+   "name": "Ricky Martin",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.82,
+    0.15,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_enrique_iglesias",
+   "name": "Enrique Iglesias",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.68,
+    0.76,
+    0.15,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_luis_fonsi",
+   "name": "Luis Fonsi",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.66,
+    0.62,
+    0.38,
+    0.64
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_morat",
+   "name": "Morat",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.58,
+    0.66,
+    0.3,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin"
+   ],
+   "id": "art_manuel_turizo",
+   "name": "Manuel Turizo",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.66,
+    0.28,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_alejandro_sanz",
+   "name": "Alejandro Sanz",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.55,
+    0.55,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_jesse_joy",
+   "name": "Jesse & Joy",
+   "ticketmaster_ids": [],
+   "vector": null
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "pop"
+   ],
+   "id": "art_fonseca",
+   "name": "Fonseca",
+   "ticketmaster_ids": [],
+   "vector": null
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "latin",
+    "world"
+   ],
+   "id": "art_silvestre_dangond",
+   "name": "Silvestre Dangond",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.72,
+    0.45,
+    0.8
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_taylor_swift",
+   "name": "Taylor Swift",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.6,
+    0.58,
+    0.3,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "folk"
+   ],
+   "id": "art_ed_sheeran",
+   "name": "Ed Sheeran",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.55,
+    0.4,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "electronic"
+   ],
+   "id": "art_dua_lipa",
+   "name": "Dua Lipa",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.72,
+    0.05,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "rnb"
+   ],
+   "id": "art_the_weeknd",
+   "name": "The Weeknd",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.62,
+    0.15,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "rnb"
+   ],
+   "id": "art_ariana_grande",
+   "name": "Ariana Grande",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.62,
+    0.22,
+    0.52
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "rnb"
+   ],
+   "id": "art_bruno_mars",
+   "name": "Bruno Mars",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.76,
+    0.72,
+    0.15,
+    0.78
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_harry_styles",
+   "name": "Harry Styles",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.62,
+    0.68,
+    0.3,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "alternative"
+   ],
+   "id": "art_billie_eilish",
+   "name": "Billie Eilish",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.6,
+    0.35,
+    0.65,
+    0.2
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "alternative"
+   ],
+   "id": "art_coldplay",
+   "name": "Coldplay",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.65,
+    0.22,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_adele",
+   "name": "Adele",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.4,
+    0.65,
+    0.3
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_lady_gaga",
+   "name": "Lady Gaga",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.66,
+    0.74,
+    0.1,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_olivia_rodrigo",
+   "name": "Olivia Rodrigo",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.62,
+    0.25,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_sabrina_carpenter",
+   "name": "Sabrina Carpenter",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.73,
+    0.65,
+    0.15,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_katy_perry",
+   "name": "Katy Perry",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.78,
+    0.05,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop"
+   ],
+   "id": "art_justin_bieber",
+   "name": "Justin Bieber",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.65,
+    0.3,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "pop",
+    "rock"
+   ],
+   "id": "art_imagine_dragons",
+   "name": "Imagine Dragons",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.78,
+    0.12,
+    0.42
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_foo_fighters",
+   "name": "Foo Fighters",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.42,
+    0.88,
+    0.03,
+    0.38
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_red_hot_chili_peppers",
+   "name": "Red Hot Chili Peppers",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.62,
+    0.82,
+    0.08,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_aerosmith",
+   "name": "Aerosmith",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.8,
+    0.1,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_u2",
+   "name": "U2",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.72,
+    0.1,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_queen",
+   "name": "Queen",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.75,
+    0.2,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_guns_n_roses",
+   "name": "Guns N' Roses",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.4,
+    0.85,
+    0.05,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_pearl_jam",
+   "name": "Pearl Jam",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.38,
+    0.8,
+    0.08,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_ac_dc",
+   "name": "AC/DC",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.92,
+    0.03,
+    0.7
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock",
+    "latin"
+   ],
+   "id": "art_mana",
+   "name": "Maná",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.78,
+    0.25,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock",
+    "latin"
+   ],
+   "id": "art_soda_stereo",
+   "name": "Soda Stereo",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.72,
+    0.18,
+    0.52
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock",
+    "latin"
+   ],
+   "id": "art_cafe_tacvba",
+   "name": "Café Tacvba",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.72,
+    0.2,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock",
+    "latin"
+   ],
+   "id": "art_aterciopelados",
+   "name": "Aterciopelados",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.7,
+    0.25,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock",
+    "latin"
+   ],
+   "id": "art_los_fabulosos_cadillacs",
+   "name": "Los Fabulosos Cadillacs",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.85,
+    0.15,
+    0.8
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_bon_jovi",
+   "name": "Bon Jovi",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.82,
+    0.1,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock"
+   ],
+   "id": "art_green_day",
+   "name": "Green Day",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.9,
+    0.02,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rock",
+    "pop"
+   ],
+   "id": "art_chris_de_burgh",
+   "name": "Chris de Burgh",
+   "ticketmaster_ids": [
+    "K8vZ9175pnV"
+   ],
+   "vector": [
+    0.45,
+    0.4,
+    0.6,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "alternative",
+    "rock"
+   ],
+   "id": "art_arctic_monkeys",
+   "name": "Arctic Monkeys",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.78,
+    0.05,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "alternative"
+   ],
+   "id": "art_radiohead",
+   "name": "Radiohead",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.4,
+    0.55,
+    0.2,
+    0.15
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "alternative"
+   ],
+   "id": "art_twenty_one_pilots",
+   "name": "Twenty One Pilots",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.72,
+    0.1,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "alternative"
+   ],
+   "id": "art_cigarettes_after_sex",
+   "name": "Cigarettes After Sex",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.35,
+    0.22,
+    0.6,
+    0.18
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "alternative"
+   ],
+   "id": "art_tame_impala",
+   "name": "Tame Impala",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.65,
+    0.1,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "alternative",
+    "rock"
+   ],
+   "id": "art_the_strokes",
+   "name": "The Strokes",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.8,
+    0.03,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk",
+    "rock"
+   ],
+   "id": "art_bob_dylan",
+   "name": "Bob Dylan",
+   "ticketmaster_ids": [
+    "K8vZ9171ueV"
+   ],
+   "vector": [
+    0.5,
+    0.5,
+    0.65,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk"
+   ],
+   "id": "art_jose_gonzalez",
+   "name": "José González",
+   "ticketmaster_ids": [
+    "K8vZ9175Yn7"
+   ],
+   "vector": [
+    0.4,
+    0.2,
+    0.92,
+    0.3
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk"
+   ],
+   "id": "art_mumford_sons",
+   "name": "Mumford & Sons",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.72,
+    0.6,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk",
+    "alternative"
+   ],
+   "id": "art_bon_iver",
+   "name": "Bon Iver",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.35,
+    0.25,
+    0.85,
+    0.18
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk"
+   ],
+   "id": "art_fleet_foxes",
+   "name": "Fleet Foxes",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.35,
+    0.35,
+    0.85,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk"
+   ],
+   "id": "art_joan_baez",
+   "name": "Joan Baez",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.3,
+    0.9,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk"
+   ],
+   "id": "art_leonard_cohen",
+   "name": "Leonard Cohen",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.3,
+    0.8,
+    0.25
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "country",
+    "folk"
+   ],
+   "id": "art_johnny_cash",
+   "name": "Johnny Cash",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.45,
+    0.75,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk"
+   ],
+   "id": "art_jack_johnson",
+   "name": "Jack Johnson",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.35,
+    0.75,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk",
+    "latin"
+   ],
+   "id": "art_joaquin_sabina",
+   "name": "Joaquín Sabina",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.45,
+    0.65,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk",
+    "latin"
+   ],
+   "id": "art_silvio_rodriguez",
+   "name": "Silvio Rodríguez",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.45,
+    0.3,
+    0.85,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "folk",
+    "world"
+   ],
+   "id": "art_mercedes_sosa",
+   "name": "Mercedes Sosa",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.4,
+    0.3,
+    0.85,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "world",
+    "latin"
+   ],
+   "id": "art_lila_downs",
+   "name": "Lila Downs",
+   "ticketmaster_ids": [
+    "K8vZ9171sw0"
+   ],
+   "vector": [
+    0.62,
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "world",
+    "latin"
+   ],
+   "id": "art_buena_vista_social_club",
+   "name": "Buena Vista Social Club",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.55,
+    0.75,
+    0.8
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "world"
+   ],
+   "id": "art_gipsy_kings",
+   "name": "Gipsy Kings",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.75,
+    0.85,
+    0.85
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "world",
+    "rock"
+   ],
+   "id": "art_manu_chao",
+   "name": "Manu Chao",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.75,
+    0.5,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "world",
+    "latin"
+   ],
+   "id": "art_toto_la_momposina",
+   "name": "Totó la Momposina",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.7,
+    0.65,
+    0.8
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic",
+    "world"
+   ],
+   "id": "art_systema_solar",
+   "name": "Systema Solar",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.78,
+    0.8,
+    0.2,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic",
+    "latin"
+   ],
+   "id": "art_bomba_estereo",
+   "name": "Bomba Estéreo",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.78,
+    0.78,
+    0.15,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic"
+   ],
+   "id": "art_calvin_harris",
+   "name": "Calvin Harris",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.8,
+    0.85,
+    0.03,
+    0.7
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic"
+   ],
+   "id": "art_david_guetta",
+   "name": "David Guetta",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.75,
+    0.85,
+    0.03,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic"
+   ],
+   "id": "art_daft_punk",
+   "name": "Daft Punk",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.8,
+    0.75,
+    0.05,
+    0.7
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic"
+   ],
+   "id": "art_avicii",
+   "name": "Avicii",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.62,
+    0.8,
+    0.1,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic"
+   ],
+   "id": "art_skrillex",
+   "name": "Skrillex",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.6,
+    0.92,
+    0.02,
+    0.3
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "electronic"
+   ],
+   "id": "art_martin_garrix",
+   "name": "Martin Garrix",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.85,
+    0.03,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rnb",
+    "pop"
+   ],
+   "id": "art_beyonce",
+   "name": "Beyoncé",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.7,
+    0.15,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rnb"
+   ],
+   "id": "art_sza",
+   "name": "SZA",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.62,
+    0.5,
+    0.35,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rnb"
+   ],
+   "id": "art_frank_ocean",
+   "name": "Frank Ocean",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.52,
+    0.4,
+    0.45,
+    0.3
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rnb"
+   ],
+   "id": "art_usher",
+   "name": "Usher",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.65,
+    0.15,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rnb"
+   ],
+   "id": "art_alicia_keys",
+   "name": "Alicia Keys",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.55,
+    0.5,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "rnb"
+   ],
+   "id": "art_daniel_caesar",
+   "name": "Daniel Caesar",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.4,
+    0.55,
+    0.3
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_kendrick_lamar",
+   "name": "Kendrick Lamar",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.68,
+    0.62,
+    0.15,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_drake",
+   "name": "Drake",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.75,
+    0.6,
+    0.15,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_eminem",
+   "name": "Eminem",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.75,
+    0.85,
+    0.08,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_travis_scott",
+   "name": "Travis Scott",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.65,
+    0.12,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_j_cole",
+   "name": "J. Cole",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.6,
+    0.25,
+    0.35
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_cardi_b",
+   "name": "Cardi B",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.85,
+    0.7,
+    0.08,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop",
+    "pop"
+   ],
+   "id": "art_nicki_minaj",
+   "name": "Nicki Minaj",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.8,
+    0.78,
+    0.08,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_kanye_west",
+   "name": "Kanye West",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.65,
+    0.65,
+    0.15,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_snoop_dogg",
+   "name": "Snoop Dogg",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.8,
+    0.7,
+    0.08,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "hip_hop"
+   ],
+   "id": "art_tyler_the_creator",
+   "name": "Tyler, The Creator",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.7,
+    0.68,
+    0.15,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "country"
+   ],
+   "id": "art_luke_combs",
+   "name": "Luke Combs",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.75,
+    0.2,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "country"
+   ],
+   "id": "art_morgan_wallen",
+   "name": "Morgan Wallen",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.6,
+    0.72,
+    0.22,
+    0.5
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "country",
+    "folk"
+   ],
+   "id": "art_dolly_parton",
+   "name": "Dolly Parton",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.5,
+    0.65,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "country",
+    "folk"
+   ],
+   "id": "art_zach_bryan",
+   "name": "Zach Bryan",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.55,
+    0.6,
+    0.3
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "jazz_blues"
+   ],
+   "id": "art_norah_jones",
+   "name": "Norah Jones",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.22,
+    0.85,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "jazz_blues"
+   ],
+   "id": "art_diana_krall",
+   "name": "Diana Krall",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.25,
+    0.85,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "jazz_blues"
+   ],
+   "id": "art_b_b_king",
+   "name": "B.B. King",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.5,
+    0.65,
+    0.55
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "jazz_blues"
+   ],
+   "id": "art_louis_armstrong",
+   "name": "Louis Armstrong",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.6,
+    0.45,
+    0.85,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "jazz_blues"
+   ],
+   "id": "art_gregory_porter",
+   "name": "Gregory Porter",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.5,
+    0.35,
+    0.75,
+    0.45
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "reggae"
+   ],
+   "id": "art_bob_marley",
+   "name": "Bob Marley",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.5,
+    0.45,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "reggae",
+    "hip_hop"
+   ],
+   "id": "art_damian_marley",
+   "name": "Damian Marley",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.75,
+    0.6,
+    0.25,
+    0.6
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "reggae"
+   ],
+   "id": "art_chronixx",
+   "name": "Chronixx",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.55,
+    0.35,
+    0.65
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "reggae"
+   ],
+   "id": "art_ziggy_marley",
+   "name": "Ziggy Marley",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.72,
+    0.55,
+    0.45,
+    0.75
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "metal",
+    "rock"
+   ],
+   "id": "art_metallica",
+   "name": "Metallica",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.38,
+    0.92,
+    0.03,
+    0.28
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "metal"
+   ],
+   "id": "art_iron_maiden",
+   "name": "Iron Maiden",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.35,
+    0.92,
+    0.02,
+    0.4
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "metal"
+   ],
+   "id": "art_slipknot",
+   "name": "Slipknot",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.35,
+    0.98,
+    0.01,
+    0.2
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "metal"
+   ],
+   "id": "art_megadeth",
+   "name": "Megadeth",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.35,
+    0.95,
+    0.01,
+    0.25
+   ]
+  },
+  {
+   "aliases": [],
+   "genres": [
+    "metal"
+   ],
+   "id": "art_rammstein",
+   "name": "Rammstein",
+   "ticketmaster_ids": [],
+   "vector": [
+    0.55,
+    0.9,
+    0.02,
+    0.35
+   ]
+  }
+ ],
+ "features": [
+  "danceability",
+  "energy",
+  "acousticness",
+  "valence"
+ ],
+ "genres": {
+  "alternative": "Alternativo",
+  "country": "Country",
+  "electronic": "Electrónica",
+  "folk": "Folk",
+  "hip_hop": "Hip-Hop/Rap",
+  "jazz_blues": "Jazz y blues",
+  "latin": "Latino",
+  "metal": "Metal",
+  "pop": "Pop",
+  "reggae": "Reggae",
+  "rnb": "R&B",
+  "rock": "Rock",
+  "world": "Música del mundo"
+ },
+ "provenance": "Perfiles musicales editoriales escritos por el equipo de SoundPass (borrador asistido por IA, pendiente de revision humana). Son estimaciones subjetivas de 0 a 1 del estilo general de cada artista; NO se extrajeron de Spotify ni de ningun dataset de terceros y no provienen de mediciones de audio. Obra original del proyecto, sin restricciones de licencia para ML.",
+ "schema": 1,
+ "ticketmaster_id_provenance": "IDs de atracciones observados en Ticketmaster Discovery (2026-11-26); Duki segun HANDOFF."
+}

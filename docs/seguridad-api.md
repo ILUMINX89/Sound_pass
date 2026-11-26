@@ -17,10 +17,15 @@ no cambia su contraseña al cambiar POSTGRES_PASSWORD: coordinar la credencial
 real y DATABASE_URL sin reinicializar ni borrar el volumen. La URL debe usar el
 servicio `db` y codificar los caracteres reservados de usuario/password.
 
-En local, añadir explícitamente `-f docker-compose.local.yml` al Compose base
-para acceder a PostgreSQL en `127.0.0.1:5433`; APP_ENV será local. Se requieren
-las variables del Compose base también para este perfil. No ejecutar contenedores
-ni despliegues durante esta sesión. No usar `docker compose down -v`.
+En local, desde la raíz del proyecto, ejecutar:
+
+```powershell
+docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+El frontend sirve `http://localhost:5500` y reenvía `/api/` al servicio `api`.
+`APP_ENV` será `local` y la API se conecta a PostgreSQL por `db:5432` en la red
+de Compose. El volumen `pgdata` conserva los datos entre arranques.
 
 ## nginx y publicación
 
@@ -37,6 +42,19 @@ copia exclusivamente esos tres archivos a la raíz web y nginx solo permite esas
 rutas. Archivos antiguos de esa raíz deben inventariarse y retirarse tras respaldo;
 la lista de nginx impide servirlos. `.env`, backend, Git y mapas quedan fuera.
 `.dockerignore` evita incluir secretos y el entorno virtual en el contexto de build.
+
+La imagen de Nginx local y Kubernetes copia esos tres archivos más
+`admin.html`, `admin.css` y `admin.js` a `/srv/soundpass`. Nginx solo sirve esas
+rutas públicas y bloquea rutas ocultas. El perfil de VM conserva los tres
+archivos publicados por su workflow. La política CSP permite iframes de
+`https://open.spotify.com` y scripts del propio sitio. Las credenciales de
+Spotify y Ticketmaster se usan en la API.
+
+Discovery puede entregar rangos y un plano estático. El detalle acepta planos
+HTTPS de `s1.ticketm.net`, `media.ticketmaster.eu` y `maps.ticketmaster.com`.
+La disponibilidad por sección, fila o asiento requiere autorización de socio.
+El filtro de origen usa identidades verificadas y procedencia del catálogo.
+El país del recinto se conserva como dato del evento.
 
 El workflow conserva el trigger `production` y exige la variable del environment
 GitHub `PUBLIC_HTTPS_URL`, por ejemplo `https://soundpass.example.invalid`.
@@ -82,11 +100,9 @@ PostgreSQL, TLS, firewall, proxy nginx real ni interacción visual del navegador
 
 ## Escritura del catálogo
 
-Los routers de conciertos y recintos incluyen flujos documentados de creación,
-edición y eliminación. Se conserva su comportamiento: bloquearlos en el perfil
-público ampliaría el alcance del #68 y eliminaría esos flujos. La autorización
-administrativa del catálogo queda pendiente de una historia con roles definidos.
-GET sigue disponible sin iniciar sesión.
+Los endpoints de escritura de conciertos y recintos exigen el rol de
+administrador mediante `require_admin`. La consulta pública del catálogo
+sigue disponible sin iniciar sesión.
 
 ## Evidencia local
 
@@ -107,8 +123,8 @@ Se añadieron casos JWT con exp nulo/lista/objeto: ahora devuelven 401 en vez de
 CI instala `backend/requirements.txt`, incluido httpx para TestClient, y ejecuta
 la misma batería. Estas comprobaciones no sustituyen TLS, firewall ni PostgreSQL.
 
-Compose, nginx y build Docker quedan pendientes de validación nativa con DevOps;
-no se levantan contenedores ni se despliega durante esta sesión.
+Compose, Nginx y la compilación de imágenes se verificaron en Docker Desktop.
+La validación de TLS y firewall del despliegue sigue a cargo de DevOps.
 
 Referencias consultadas: [URLs de documentación de FastAPI](https://fastapi.tiangolo.com/tutorial/metadata/#docs-urls)
 y [publicación de puertos de Docker](https://docs.docker.com/engine/network/port-publishing/).

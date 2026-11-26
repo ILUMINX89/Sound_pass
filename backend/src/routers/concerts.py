@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -6,6 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from src import models, schemas, security
+from src.artist_origins import artist_catalog, concert_metadata, origin_evidence
+from src.ticketmaster import (
+    TicketmasterError, add_fallback_price, get_artist_upcoming_events, get_event_detail, get_public_concerts,
+    spotify_identity,
+)
 from src.database import get_db
 from src.spotify import (
     SpotifyArtistError,
@@ -31,13 +36,14 @@ def list_concerts(
     sort: str = Query(default="date", pattern="^(date|price_asc|price_desc)$"),
     db: Session = Depends(get_db),
 ):
+    metadata = concert_metadata(db, "starts_at", "timezone", "catalog_status")
     query = (
-        db.query(models.Concert)
+        db.query(models.Concert, *metadata)
         .options(
             joinedload(models.Concert.venue),
             joinedload(models.Concert.ticket_types),
         )
-        .filter(models.Concert.event_date >= date.today())
+        .filter(models.Concert.event_date >= date.today() - timedelta(days=1))
     )
 
     # Filtrar por ciudad
@@ -54,7 +60,13 @@ def list_concerts(
 
     results = []
 
-    for c in concerts:
+    for c, catalog_source, provider_id, evidence, starts_at, timezone, status in concerts:
+        imported = catalog_source == "ticketmaster"
+        eligible = [(artist_id, origin) for artist_id, origin in origin_evidence(evidence) if origin.allowed]
+        if imported and (not provider_id or not eligible):
+            continue
+        artist_ids = {artist_id for artist_id, origin in eligible if artist_id
+                      and origin.name.casefold() == c.artist.casefold()}
 
         # ----------------------------------------------------
         # PRECIO MÁS BAJO DEL CONCIERTO
@@ -70,6 +82,11 @@ def list_concerts(
         results.append(
             schemas.ConcertListOut(
                 id=c.id,
+                external_id=provider_id if imported else None,
+                artist_id=next(iter(artist_ids)) if len(artist_ids) == 1 else None,
+                starts_at=starts_at,
+                timezone=timezone,
+                status=status if imported else None,
                 artist=c.artist,
                 tour_name=c.tour_name,
                 genre=c.genre,
@@ -101,6 +118,63 @@ def list_concerts(
 # ============================================================
 # OBTENER UN CONCIERTO
 # ============================================================
+
+
+
+@router.get("/ticketmaster")
+def list_ticketmaster_concerts(q: str = Query(default="", max_length=100), db: Session = Depends(get_db)):
+    catalog = artist_catalog(db)
+    db.rollback()
+    try:
+        return {"source": "ticketmaster", "events": get_public_concerts(q, catalog)}
+    except TicketmasterError as error:
+        raise HTTPException(
+            status_code=error.status_code, detail=error.message
+        ) from None
+
+
+def _external_event(event_id, db):
+    catalog = artist_catalog(db)
+    source, external_id, provenance = concert_metadata(db)
+    rows = (db.query(provenance).select_from(models.Concert)
+            .filter(source == "ticketmaster", external_id == event_id).distinct().all())
+    db.rollback()
+    imported = [item for (value,) in rows for item in origin_evidence(value)]
+    try:
+        card, event = get_event_detail(event_id, catalog, imported)
+    except TicketmasterError as error:
+        raise HTTPException(status_code=error.status_code, detail=error.message) from None
+    return card, event, catalog
+
+
+@router.get("/ticketmaster/{event_id}")
+def get_external_concert(event_id: str, db: Session = Depends(get_db)):
+    card, _, _ = _external_event(event_id, db)
+    return add_fallback_price(card)
+
+
+@router.get("/ticketmaster/{event_id}/spotify")
+def get_external_spotify(event_id: str, db: Session = Depends(get_db)):
+    card, event, catalog = _external_event(event_id, db)
+    artist_id = spotify_identity(event, card["artist_id"], catalog)
+    return _spotify_player_response(event_id, card["artist"], spotify_id=artist_id)
+
+
+@router.get("/ticketmaster/{event_id}/artist-bio")
+def get_external_artist_bio(event_id: str, db: Session = Depends(get_db)):
+    card, _, _ = _external_event(event_id, db)
+    return _artist_bio_response(event_id, card["artist"])
+
+
+@router.get("/ticketmaster/{event_id}/upcoming-events")
+def get_external_upcoming_events(event_id: str, db: Session = Depends(get_db)):
+    card, _, catalog = _external_event(event_id, db)
+    try:
+        result = get_artist_upcoming_events(card["artist"], catalog,
+                                            artist_id=card["artist_id"], exclude_event=event_id)
+    except TicketmasterError as error:
+        raise HTTPException(status_code=error.status_code, detail=error.message) from None
+    return {"concert_id": event_id, **result}
 
 
 @router.get("/{concert_id}", response_model=schemas.ConcertDetailOut)
@@ -273,24 +347,23 @@ def get_concert_artist_bio(
             detail="Concierto no encontrado",
         )
 
+    artist = concert.artist
+    db.rollback()
+    return _artist_bio_response(concert_id, artist)
+
+
+def _artist_bio_response(concert_id, artist):
     try:
-        result = get_artist_bio(concert.artist)
+        result = get_artist_bio(artist)
     except WikipediaUnavailableError:
-        payload = schemas.ArtistBioOut(
-            concert_id=concert.id,
-            artist=concert.artist,
-            status="unavailable",
-        )
+        payload = {"concert_id": concert_id, "artist": artist, "status": "unavailable",
+                   "biography": None, "article_title": None, "article_url": None, "source": "Wikipedia"}
         return JSONResponse(
             status_code=503,
-            content=payload.model_dump(mode="json"),
+            content=payload,
         )
 
-    return schemas.ArtistBioOut(
-        concert_id=concert.id,
-        artist=concert.artist,
-        **result,
-    )
+    return {"concert_id": concert_id, "artist": artist, **result}
 
 
 
@@ -344,8 +417,12 @@ def get_concert_spotify(
     # Termina la lectura y libera la conexión antes de consultar Spotify.
     db.rollback()
 
+    return _spotify_player_response(concert_id, artist_name)
+
+
+def _spotify_player_response(concert_id, artist_name, *, spotify_id=None):
     try:
-        result = get_artist_player(artist_name)
+        result = get_artist_player(artist_name, spotify_id=spotify_id)
 
     except SpotifyArtistError as error:
         headers = None
@@ -453,8 +530,6 @@ def get_concert_upcoming_events(
     concert_id: int,
     db: Session = Depends(get_db),
 ):
-    from src.ticketmaster import TicketmasterError, get_artist_upcoming_events
-
     row = (
         db.query(models.Concert.artist)
         .filter(models.Concert.id == concert_id)
@@ -470,10 +545,11 @@ def get_concert_upcoming_events(
         )
 
     artist = row[0] or ""
+    catalog = artist_catalog(db)
     db.rollback()
 
     try:
-        result = get_artist_upcoming_events(artist)
+        result = get_artist_upcoming_events(artist, catalog)
     except TicketmasterError as error:
         raise HTTPException(
             status_code=error.status_code,

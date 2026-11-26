@@ -19,6 +19,7 @@ Actividad de la asignatura **Desarrollo de aplicaciones en la nube**, Fundación
 - [Equipo de Desarrollo](#equipo-de-desarrollo)
 - [Descripción del Proyecto](#descripción-del-proyecto)
 - [Arquitectura](#arquitectura)
+- [Inteligencia artificial y recomendaciones](#inteligencia-artificial-y-recomendaciones)
 - [Metodología](#metodología)
 - [Sprints Completados](#sprints-completados)
 - [Automatización con GitHub Actions](#automatización-con-github-actions)
@@ -99,6 +100,51 @@ Decisiones de diseño:
 2. **nginx como proxy inverso.** El frontend y la API salen del mismo origen (`/` y `/api`), así el navegador no cruza orígenes y no hay problemas de CORS.
 3. **Ninguna credencial en el código.** Las claves del servidor se generan dentro de la VM en un `docker-compose.override.yml` que no se versiona, y las de GitHub Actions están en *Secrets*.
 4. **Superficie mínima expuesta.** En Azure solo están abiertos los puertos 22 (SSH) y 80 (HTTP). La API (8000) y la base de datos (5432) no son accesibles desde internet.
+
+---
+
+## Inteligencia artificial y recomendaciones
+
+SoundPass incorpora dos capacidades diferenciadas: un asistente conversacional apoyado en Ollama para consultar el catálogo en lenguaje natural y un recomendador K-means entrenado offline para ordenar la sección «Para ti» según las preferencias guardadas de cada cuenta.
+
+### Asistente de SoundPass
+
+```mermaid
+flowchart TD
+    A["Pregunta del usuario"] --> B["API autenticada /assistant/chat"]
+    B --> C["Ollama interpreta la intención"]
+    C --> D{"¿Qué necesita el usuario?"}
+    D -->|Conciertos| E["FastAPI consulta el catálogo"]
+    D -->|Ayuda o aclaración| F["Respuesta de ayuda o pregunta breve"]
+    E --> G["Respuesta con resultados del catálogo"]
+    F --> H["Chat de SoundPass"]
+    G --> H
+```
+
+El asistente separa la comprensión del lenguaje natural de los datos del catálogo:
+
+- **Qué interpreta Ollama:** dada una pregunta como *«Fechas de Bad Bunny en Madrid»* o *«¿Qué conciertos hay próximos de mayor a menor en tiempo?»*, Ollama devuelve un JSON compacto validado con Pydantic (`CatalogIntent`) que solo clasifica `intent` (`concerts`, `help` o `clarify`), `order` (`nearest_first` o `latest_first`) y los filtros opcionales `artist` y `city`.
+- **Cómo responde el backend:** cuando la intención es `concerts`, FastAPI consulta directamente los registros reales del catálogo para construir la respuesta con fechas, recintos y ciudades verificables sin inventar eventos ni políticas; si la pregunta es de soporte o ambigua, devuelve una guía breve de ayuda o solicita una aclaración.
+- **Estado y configuración verificados:** el chat (`#screen-assistant` en `frontend/index.html` y `frontend/script.js` con `AI_CONTRACT.path = "/assistant/chat"`), el proxy de Nginx (`/api/assistant/chat`), el router autenticado (`backend/src/routers/assistant.py`, registrado en `backend/src/main.py`) y las variables en `docker-compose.yml` y `backend/.env.example` están integrados en `development` consultando el catálogo en vivo de Ticketmaster Discovery. Se configuran `OLLAMA_BASE_URL` (vacía desactiva el asistente devolviendo HTTP 503), `OLLAMA_MODEL=qwen2.5:1.5b` y `OLLAMA_TIMEOUT_SECONDS=55`. La respuesta en vivo requiere conectividad de red desde el contenedor `api` hasta el servidor Ollama configurado.
+
+### Recomendador K-means
+
+```mermaid
+flowchart TD
+    A["Perfiles musicales de artistas"] --> B["Entrenamiento offline"]
+    B --> C["Preprocesamiento y centroides"]
+    D["Respuestas del cuestionario"] --> E["Vector de gustos"]
+    E --> F["Asignación de perfil y ranking por afinidad"]
+    C --> F
+    G["Artistas con conciertos futuros"] --> F
+    F --> H["Para ti"]
+```
+
+- **Flujo de usuario y persistencia:** tras el registro autenticado (y en cualquier momento desde el menú de cuenta o la portada), el usuario puede completar un cuestionario opcional en tres pasos: **Géneros** (hasta 5), **Artistas** (hasta 8) y **Sonido** (cuatro escalas opcionales de 1 a 5: baile, energía, acústica y ánimo). Puede **omitir** en el alta o **editar** después; las respuestas se validan en el backend y se persisten por cuenta en la tabla `user_preferences` de PostgreSQL (`database/migrations/003_user_preferences.sql`), accesibles solo con el token de la propia cuenta (`/api/preferences/options`, `/api/preferences/me`, `/api/preferences/me/skip` y `/api/preferences/me/recommendations`).
+- **Perfil y ranking:** las respuestas se combinan en un vector de cuatro señales (pesos `0.4` escalas, `0.4` artistas y `0.2` géneros, renormalizados según las señales presentes). El runtime en Python puro (`backend/src/recommendation/engine.py`) proyecta el vector en el espacio del modelo, asigna el perfil musical con K-means y ordena por distancia euclidiana a los artistas con eventos futuros elegibles del catálogo real (una tarjeta por artista con la fecha válida más cercana y desempates deterministas). Si falta el vector de un artista se usa el prototipo de género curado con penalización; si el usuario omite el formulario, el modelo no está disponible o no hay coincidencias, la portada conserva el catálogo general. El recomendador ordena por afinidad musical y no predice compras.
+- **Entrenamiento offline y métricas reales:** el entrenamiento nunca se ejecuta al registrar usuarios. `backend/training/train.py` procesa `backend/training/artist_profiles.json` (131 artistas con IDs estables `art_*`: 127 con vector de cuatro señales y 4 sin vector para respaldo por género; borrador editorial propio del proyecto **pendiente de revisión humana**, fuera de Spotify y sin datos de terceros). Separa entrenamiento y evaluación por artista (99 / 28, estratificado por género principal), compara escalado 4-D frente a escalado + PCA(2) para `k=2..8` y 10 semillas, y publica artefactos versionados y verificados por SHA-256 en `backend/src/recommendation/artifacts/`.
+  - **Modelo seleccionado (`kmeans-scaled_pca2-k3-3e3d04df`, `scaled_pca2`, `k=3`):** silueta de entrenamiento `0.430`, silueta de evaluación `0.462`, estabilidad ARI entre semillas `1.000`, estabilidad ARI en submuestras `0.986`, cobertura del catálogo vivo `100 %` (8/8 artistas con vector propio) y precisión@5 media de `0.60` sobre 5 perfiles de gusto de prueba (frente a `0.229` aleatorio y `0.80` solo por género).
+  - El método adapta ideas de `soundpass-recomendador-kmeans` (aviso MIT en `backend/training/NOTICE-MIT.md`), pero utiliza un conjunto de perfiles y una partición distintos; estas métricas corresponden únicamente al modelo local y no se comparan como mejora frente al repositorio de referencia.
 
 ---
 

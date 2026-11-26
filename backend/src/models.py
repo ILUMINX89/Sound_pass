@@ -4,6 +4,8 @@ from sqlalchemy import (
     String, Integer, Numeric, Text, Date, Time, DateTime, ForeignKey, CheckConstraint,
 )
 from sqlalchemy import UniqueConstraint, func
+from sqlalchemy import JSON, SmallInteger
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -150,3 +152,18 @@ class IssuedTicket(Base):
             name="ck_issued_tickets_sequence_positive",
         ),
     )
+
+
+class UserPreference(Base):
+    """Recommendation questionnaire answers: one row per user, only reachable through that user's token."""
+    __tablename__ = "user_preferences"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    status: Mapped[str] = mapped_column(String(10), nullable=False)
+    genres: Mapped[list] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
+    artist_ids: Mapped[list] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
+    scale_danceability: Mapped[int | None] = mapped_column(SmallInteger)
+    scale_energy: Mapped[int | None] = mapped_column(SmallInteger)
+    scale_acousticness: Mapped[int | None] = mapped_column(SmallInteger)
+    scale_mood: Mapped[int | None] = mapped_column(SmallInteger)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

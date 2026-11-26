@@ -61,11 +61,16 @@ class TicketTypeOut(BaseModel):
 class ConcertListOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    external_id: str | None = None
+    artist_id: str | None = None
+    starts_at: str | None = None
+    timezone: str | None = None
+    status: str | None = None
     artist: str
     tour_name: str
     genre: str
     event_date: date
-    event_time: time
+    event_time: time | None
     venue: VenueOut
     price_from: Decimal
     tickets_available: int | None = None
@@ -79,7 +84,7 @@ class ConcertDetailOut(BaseModel):
     tour_name: str
     genre: str
     event_date: date
-    event_time: time
+    event_time: time | None
     description: str | None
     image_url: str | None
     venue: VenueOut
@@ -231,6 +236,7 @@ class UpcomingArtistEventOut(BaseModel):
     time: EventTime | None = None
     timezone: str | None = None
     city: str | None = None
+    starts_at: str | None = None
     country: str | None = None
     venue: str | None = None
 
@@ -242,3 +248,28 @@ class ConcertUpcomingEventsOut(BaseModel):
     status: Literal["ok", "not_found", "ambiguous", "no_events"]
     events: list[UpcomingArtistEventOut]
     message: str | None = None
+
+
+# ============================================================
+# Preferences (recommendations)
+# ============================================================
+class TasteScales(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    danceability: int = Field(strict=True, ge=1, le=5)
+    energy: int = Field(strict=True, ge=1, le=5)
+    acousticness: int = Field(strict=True, ge=1, le=5)
+    mood: int = Field(strict=True, ge=1, le=5)
+
+
+class PreferencesIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    genres: list[str] = Field(default_factory=list, max_length=5)
+    artist_ids: list[str] = Field(default_factory=list, max_length=8)
+    scales: TasteScales | None = None
+
+
+class PreferencesOut(BaseModel):
+    status: Literal["unset", "answered", "skipped"]
+    genres: list[str] = []
+    artist_ids: list[str] = []
+    scales: TasteScales | None = None

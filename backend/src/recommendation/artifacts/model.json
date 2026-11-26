@@ -1,0 +1,268 @@
+{
+ "centroids": [
+  [
+   -2.6041167998,
+   0.5833876731
+  ],
+  [
+   1.0775120888,
+   0.6422593147
+  ],
+  [
+   0.0850053886,
+   -1.0459869276
+  ]
+ ],
+ "clusters": [
+  {
+   "description": "Bailable 0.48 · energía 0.37 · acústico 0.73 · ánimo 0.39 (promedio del grupo)",
+   "id": 0,
+   "name": "Tranquilo y Acústico",
+   "size": 19
+  },
+  {
+   "description": "Bailable 0.74 · energía 0.71 · acústico 0.25 · ánimo 0.65 (promedio del grupo)",
+   "id": 1,
+   "name": "Bailable",
+   "size": 43
+  },
+  {
+   "description": "Bailable 0.55 · energía 0.74 · acústico 0.16 · ánimo 0.44 (promedio del grupo)",
+   "id": 2,
+   "name": "Equilibrado",
+   "size": 37
+  }
+ ],
+ "fallback_penalty": 0.35,
+ "features": [
+  "danceability",
+  "energy",
+  "acousticness",
+  "valence"
+ ],
+ "genre_prototypes": {
+  "alternative": [
+   0.49,
+   0.584,
+   0.21,
+   0.366
+  ],
+  "country": [
+   0.55,
+   0.6175,
+   0.4425,
+   0.475
+  ],
+  "electronic": [
+   0.7416666667,
+   0.8166666667,
+   0.0733333333,
+   0.65
+  ],
+  "folk": [
+   0.45,
+   0.3688888889,
+   0.7888888889,
+   0.3866666667
+  ],
+  "hip_hop": [
+   0.74,
+   0.67,
+   0.1325,
+   0.4875
+  ],
+  "jazz_blues": [
+   0.5375,
+   0.3875,
+   0.775,
+   0.5375
+  ],
+  "latin": [
+   0.7339130435,
+   0.7152173913,
+   0.2447826087,
+   0.6226086957
+  ],
+  "metal": [
+   0.4075,
+   0.9375,
+   0.0175,
+   0.27
+  ],
+  "pop": [
+   0.6233333333,
+   0.6375,
+   0.2425,
+   0.4741666667
+  ],
+  "reggae": [
+   0.73,
+   0.55,
+   0.3833333333,
+   0.7
+  ],
+  "rnb": [
+   0.612,
+   0.53,
+   0.33,
+   0.42
+  ],
+  "rock": [
+   0.4891666667,
+   0.7716666667,
+   0.1533333333,
+   0.5108333333
+  ],
+  "world": [
+   0.68,
+   0.6625,
+   0.675,
+   0.755
+  ]
+ },
+ "metrics": {
+  "catalog_coverage": 1.0,
+  "mean_precision_at_5": {
+   "distance_only": 0.6,
+   "genre_only": 0.8,
+   "kmeans_then_distance": 0.6,
+   "random_expected": 0.2285714286
+  },
+  "quality_gate_passed": true,
+  "silhouette_eval": 0.4622596443,
+  "silhouette_train": 0.4295369814,
+  "stability_ari_seeds": 1.0,
+  "stability_ari_subsample": 0.9858479499
+ },
+ "preprocessing": {
+  "mean": [
+   0.6166666667,
+   0.6523232323,
+   0.3077777778,
+   0.5212121212
+  ],
+  "pca": {
+   "components": [
+    [
+     0.4889519297,
+     0.5511678041,
+     -0.5060125136,
+     0.4484321558
+    ],
+    [
+     0.4751907862,
+     -0.4062787373,
+     0.5268914422,
+     0.57577488
+    ]
+   ],
+   "mean": [
+    0.0,
+    0.0,
+    -0.0,
+    0.0
+   ]
+  },
+  "scale": [
+   0.1359367054,
+   0.1713689875,
+   0.2571701302,
+   0.1595591954
+  ]
+ },
+ "profiles_sha256": "3e3d04df6d8439e3209ad5d6592a6b858beccc8c70dcff9d08decf4833a72f3b",
+ "schema": 1,
+ "self_check": [
+  {
+   "cluster": 2,
+   "input": [
+    0.5,
+    0.92,
+    0.03,
+    0.7
+   ],
+   "point": [
+    1.4903134126,
+    -0.9663828189
+   ]
+  },
+  {
+   "cluster": 0,
+   "input": [
+    0.45,
+    0.4,
+    0.65,
+    0.3
+   ],
+   "point": [
+    -2.7060895372,
+    -0.0815140936
+   ]
+  },
+  {
+   "cluster": 2,
+   "input": [
+    0.45,
+    0.8,
+    0.1,
+    0.5
+   ],
+   "point": [
+    0.2246943561,
+    -1.434963235
+   ]
+  },
+  {
+   "cluster": 2,
+   "input": [
+    0.7,
+    0.66,
+    0.24,
+    0.4
+   ],
+   "point": [
+    0.1171338066,
+    -0.3031551373
+   ]
+  },
+  {
+   "cluster": 2,
+   "input": [
+    0.5,
+    0.78,
+    0.05,
+    0.5
+   ],
+   "point": [
+    0.4385954147,
+    -1.3152039778
+   ]
+  }
+ ],
+ "training": {
+  "config": "scaled_pca2",
+  "eval_artists": 28,
+  "k": 3,
+  "seed": 0,
+  "seeds_compared": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "split": "soundpass-split-v1, stratified by primary genre",
+  "train_artists": 99
+ },
+ "version": "kmeans-scaled_pca2-k3-3e3d04df",
+ "weights": {
+  "artists": 0.4,
+  "genres": 0.2,
+  "scales": 0.4
+ }
+}

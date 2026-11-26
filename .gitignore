@@ -1,2 +1,8 @@
 
 k8s/secret.yaml
+/backend/**/.env
+/backend/**/__pycache__/
+/backend/**/*.py[cod]
+/AGENTS.md
+/HANDOFF.md
+/.local/

@@ -5,6 +5,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from src.config import settings
 from src.routers import auth, concerts, orders, venues
 from src.routers import tickets
+from src.routers import preferences
+from src.routers import assistant
 
 
 
@@ -31,6 +33,8 @@ app.include_router(concerts.router)
 app.include_router(orders.router)
 app.include_router(tickets.router)
 app.include_router(venues.router)
+app.include_router(preferences.router)
+app.include_router(assistant.router)
 
 
 @app.get("/health", tags=["health"])
