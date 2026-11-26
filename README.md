@@ -30,6 +30,9 @@ Actividad de la asignatura **Desarrollo de aplicaciones en la nube**, Fundación
 - [Lecciones Aprendidas](#lecciones-aprendidas)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Enlaces Importantes](#enlaces-importantes)
+- [Perfil público de seguridad](#perfil-público-de-seguridad-issue-68)
+- [Kubernetes y monitoreo](#kubernetes-y-monitoreo-proyecto-3)
+- [Problemas y soluciones](#problemas-y-soluciones)
 
 ---
 
@@ -582,17 +585,6 @@ JWT de ejemplo: HTTPS y la topología real de la VM todavía deben verificarse.
 
 ## Kubernetes y monitoreo (Proyecto 3)
 
-### Inicializar el catálogo de Ticketmaster en Minikube
-
-Con PostgreSQL listo y `TICKETMASTER_API_KEY` configurada en `k8s/secret.yaml`, ejecuta desde PowerShell:
-
-```powershell
-.\scripts\sync-catalog-minikube.ps1
-```
-
-El script construye la imagen del importador desde el commit `5415c95`, aplica la migración y ejecuta una sincronización por origen del artista. Comprueba `cycle=success` y `published` en los logs. Con el port-forward del frontend abierto, consulta `/api/concerts/ticketmaster?q=` y comprueba que devuelve eventos. Ejecuta este paso al inicializar un volumen nuevo de PostgreSQL.
-
-
 La aplicación corre en un clúster local de **Minikube**. La API tiene 2 réplicas (hasta 5 con autoescalado), PostgreSQL corre dentro del clúster con un disco persistente, y Prometheus y Grafana miden la API.
 
 ### Arquitectura
@@ -620,6 +612,7 @@ Prometheus ── lee /metrics de cada pod de la API cada 15 s ──> Grafana (
 | `k8s/50-hpa.yaml` | Autoescalado de 2 a 5 réplicas cuando la CPU pasa del 50 % |
 | `k8s/monitoring/` | Valores de Helm, ServiceMonitor y dashboard de Grafana |
 | `scripts/trafico.py` | Script para generar tráfico de prueba |
+| `k8s/catalog-sync-job.yaml` y `scripts/sync-catalog-minikube.ps1` | Importación inicial de artistas y conciertos de Ticketmaster |
 
 ### Requisitos
 
@@ -649,32 +642,88 @@ kubectl create secret docker-registry ghcr-cred -n soundpass --docker-server=ghc
 
 ### Desplegar la aplicación
 
+Ejecuta los comandos desde la raíz de `Sound_pass`, con Docker Desktop abierto. Para una instalación nueva, primero prepara el clúster y el archivo de claves:
+
 ```powershell
-minikube start --driver=docker --cpus=4 --memory=6g
+minikube start --driver=docker --cpus=4 --memory=8192
 minikube addons enable ingress
 minikube addons enable metrics-server
 
-# Claves: copiar la plantilla y llenar los valores reales
-Copy-Item k8s\secret.example.yaml k8s\secret.yaml
+if (-not (Test-Path 'k8s/secret.yaml')) {
+    Copy-Item k8s/secret.example.yaml k8s/secret.yaml
+}
+```
 
-# Scripts de la base de datos
-kubectl create namespace soundpass
-kubectl create configmap db-init -n soundpass --from-file=1-schema.sql=database/schema.sql --from-file=2-seed.sql=database/seed.sql
+Completa `k8s/secret.yaml` antes de desplegar. Usa la misma contraseña nueva en `POSTGRES_PASSWORD` y `DATABASE_URL`, una clave aleatoria para `SECRET_KEY` y la clave de Ticketmaster para cargar el catálogo. Si Ollama corre en otro servidor, agrega bajo `stringData` su URL HTTP base en `OLLAMA_BASE_URL` y el modelo disponible en `OLLAMA_MODEL`. El `localhost` de un pod apunta a ese mismo pod. Mantén el Secret fuera de Git.
 
-# Todo lo demás
-kubectl apply -k k8s/
-kubectl get pods,svc -n soundpass
+Construye las dos imágenes como se indica en **Imágenes** y despliega:
+
+```powershell
+kubectl --context=minikube create namespace soundpass
+kubectl --context=minikube -n soundpass create configmap db-init --from-file=1-schema.sql=database/schema.sql --from-file=2-seed.sql=database/seed.sql
+kubectl --context=minikube apply -k k8s/
+kubectl --context=minikube -n soundpass get pods,svc
 ```
 
 Abrir la aplicación:
 
 ```powershell
-kubectl port-forward svc/soundpass-frontend 8080:80 -n soundpass
+kubectl --context=minikube -n soundpass port-forward svc/soundpass-frontend 8080:80
 ```
 
 → http://localhost:8080
 
 Con Ingress: dejar corriendo `minikube tunnel`, agregar `127.0.0.1 soundpass.local` a `C:\Windows\System32\drivers\etc\hosts` y abrir http://soundpass.local
+
+### Inicializar el catálogo de Ticketmaster en Minikube
+
+Con PostgreSQL listo y `TICKETMASTER_API_KEY` configurada en `k8s/secret.yaml`, ejecuta desde PowerShell:
+
+```powershell
+.\scripts\sync-catalog-minikube.ps1
+```
+
+El script construye la imagen del importador desde el commit `5415c95`, aplica la migración y ejecuta una sincronización por origen del artista. Comprueba `cycle=success` y `published` en los logs. Con el port-forward del frontend abierto, consulta `/api/concerts/ticketmaster?q=` y comprueba que devuelve eventos. Ejecuta este paso al inicializar un volumen nuevo de PostgreSQL.
+
+### Actualizar desde development
+
+Después de que el PR se fusione, actualiza tu copia y despliega la nueva imagen de la API. Si el cambio incluye frontend, también debes reconstruir y desplegar su imagen.
+
+```powershell
+git switch development
+git pull --ff-only
+$commit = git rev-parse --short HEAD
+$imagen = "ghcr.io/iluminx89/sound_pass-api:dev-$commit"
+minikube image build -t $imagen backend
+if ($LASTEXITCODE -ne 0) { throw 'Fallo la compilacion de la API.' }
+kubectl --context=minikube -n soundpass set image deploy/soundpass-api "api=$imagen"
+if ($LASTEXITCODE -ne 0) { throw 'Fallo la actualizacion de la API.' }
+kubectl --context=minikube -n soundpass rollout status deploy/soundpass-api --timeout=180s
+```
+
+Si también cambió el frontend, actualiza su imagen con el mismo commit:
+
+```powershell
+$frontend = "ghcr.io/iluminx89/sound_pass-frontend:dev-$commit"
+minikube image build -t $frontend frontend
+if ($LASTEXITCODE -ne 0) { throw 'Fallo la compilacion del frontend.' }
+kubectl --context=minikube -n soundpass set image deploy/soundpass-frontend "frontend=$frontend"
+kubectl --context=minikube -n soundpass rollout status deploy/soundpass-frontend --timeout=180s
+```
+
+Si actualizas un volumen que existía antes de incorporar las preferencias, aplica su migración y comprueba que termina con `COMMIT`:
+
+```powershell
+Get-Content .\database\migrations\003_user_preferences.sql -Raw |
+    kubectl --context=minikube -n soundpass exec -i soundpass-db-0 -- psql -U soundpass_user -d soundpass -v ON_ERROR_STOP=1
+```
+
+Con el acceso de SoundPass abierto, verifica que las preferencias devuelven `True` y que hay eventos. Prueba también guardar preferencias en la página con una sesión iniciada.
+
+```powershell
+(Invoke-RestMethod 'http://localhost:8080/api/preferences/options').available
+(Invoke-RestMethod 'http://localhost:8080/api/concerts/ticketmaster?q=').events.Count
+```
 
 ### Monitoreo con Prometheus y Grafana
 
@@ -691,21 +740,28 @@ Instalar Prometheus y Grafana dentro del clúster:
 ```powershell
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-kubectl create namespace monitoring
-kubectl create secret generic grafana-admin -n monitoring --from-literal=admin-user=admin --from-literal=admin-password=<clave>
-helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring -f k8s/monitoring/helm/values.yaml
-kubectl apply -f k8s/monitoring/
-kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+kubectl --context=minikube create namespace monitoring
+$grafanaPassword = [guid]::NewGuid().ToString('N')
+kubectl --context=minikube -n monitoring create secret generic grafana-admin --from-literal=admin-user=admin "--from-literal=admin-password=$grafanaPassword"
+helm --kube-context minikube upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring -f k8s/monitoring/helm/values.yaml --wait --timeout 10m
+kubectl --context=minikube apply -f k8s/monitoring/
+kubectl --context=minikube -n monitoring port-forward --address 127.0.0.1 svc/monitoring-grafana 3001:80
 ```
 
-→ http://localhost:3000 → Dashboards → **SoundPass**
+Abre [Grafana](http://127.0.0.1:3001), inicia sesión como `admin` y entra en **Dashboards → SoundPass**. Si el Secret `grafana-admin` ya existía, se conserva su contraseña anterior. Para recuperarla en PowerShell, lee el valor del Secret y decodifícalo localmente:
+
+```powershell
+$encoded = kubectl --context=minikube -n monitoring get secret grafana-admin -o 'jsonpath={.data.admin-password}'
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encoded))
+```
 
 Paneles: throughput por ruta, latencia p50/p95, errores 4xx/5xx, CPU por pod, requests en curso, réplicas disponibles y requests totales.
 
 ### Tráfico de prueba y autoescalado
 
 ```powershell
-Get-Content scripts/trafico.py | kubectl run trafico -i --rm --restart=Never --image=python:3.12-alpine -n soundpass -- python - http://soundpass-api:8000 180 20
+$script = Get-Content .\scripts\trafico.py -Raw -ErrorAction Stop
+$script | kubectl --context=minikube -n soundpass run trafico -i --rm --restart=Never --image=python:3.12-alpine -- python - http://soundpass-api:8000 120 20
 ```
 
 En otra terminal:
@@ -714,7 +770,7 @@ En otra terminal:
 kubectl get hpa -n soundpass -w
 ```
 
-En nuestra prueba la API llegó a unos 150 requests por segundo y el HPA la escaló de 2 a 5 réplicas. Al terminar el tráfico vuelve a 2 en unos 5 minutos.
+En Grafana, selecciona **Last 5 minutes** y observa el panel de solicitudes por segundo. La subida confirma que Prometheus registra el tráfico. Si la CPU supera el objetivo durante suficiente tiempo, el HPA puede aumentar las réplicas. Comprueba el valor observado antes de afirmar que hubo autoescalado.
 
 ### Comandos útiles
 
@@ -726,3 +782,29 @@ En nuestra prueba la API llegó a unos 150 requests por segundo y el HPA la esca
 | Probar que se recupera solo | `kubectl delete pod <nombre-de-un-pod-api> -n soundpass` |
 | Aplicar cambios del Secret | `kubectl apply -k k8s/` y `kubectl rollout restart deploy/soundpass-api -n soundpass` |
 | Apagar el clúster sin borrar nada | `minikube stop` |
+
+### Volver a abrir el entorno y probar la recuperación
+
+Después de apagar el equipo, abre Docker Desktop y ejecuta `minikube start`. Revisa los pods en los namespaces `soundpass` y `monitoring`. Abre los dos comandos de `port-forward` en terminales distintas y déjalas abiertas. El clúster y sus datos se conservan al usar `minikube stop`.
+
+Para la demostración, observa los pods de la API en una terminal y borra **solo un pod de la API** desde otra. Kubernetes crea un reemplazo. Comprueba que tiene otro nombre, llega a `1/1 Running` y la aplicación sigue respondiendo.
+
+```powershell
+kubectl --context=minikube -n soundpass get pods -l app=soundpass-api -w
+```
+
+En la segunda terminal, sustituye `NOMBRE_DEL_POD_API` por el nombre de una réplica:
+
+```powershell
+kubectl --context=minikube -n soundpass delete pod NOMBRE_DEL_POD_API
+```
+
+## Problemas y soluciones
+
+| Qué pasó | Cómo lo resolvimos |
+|---|---|
+| En Minikube la página decía que no encontraba conciertos. | La base nueva solo reconocía a Duki y Ticketmaster no devolvía fechas para él. Recuperamos el importador por origen del artista y cargamos el catálogo. La API pasó de cero a **89 eventos de 8 artistas** en la prueba. |
+| La API decía que las recomendaciones no estaban disponibles. | Al construir desde Windows, los saltos de línea podían cambiar los archivos del recomendador. La imagen ahora los prepara y valida durante la compilación. La prueba del endpoint devolvió **131 artistas y 13 géneros**. |
+| El formulario abría, pero fallaba al guardar. | Aplicamos la migración de preferencias al PostgreSQL que ya estaba en uso. Después se pudieron guardar las respuestas. |
+| Windows no dejaba abrir Grafana en el puerto 3000. | Abrimos el acceso local en el puerto **3001** y mantuvimos el servicio de Grafana dentro del clúster. |
+| PowerShell no encontraba el script para generar tráfico. | Ejecutamos el comando desde la carpeta `Sound_pass`, donde está `scripts/trafico.py`. |
