@@ -1,0 +1,24 @@
+{
+ "description": "Perfiles de gusto sinteticos para evaluar el Top 5. 'expected_genres' etiqueta como relevantes a los artistas retenidos (evaluacion) cuyo genero principal esta en la lista; la etiqueta usa generos curados, no los vectores. Los favoritos se usan solo si pertenecen al conjunto de entrenamiento.",
+ "personas": [
+  {"id": "folk_acustico", "scales": [2, 1, 5, 2], "genres": ["folk", "jazz_blues"],
+   "favorites": ["José González", "Joan Baez", "Norah Jones"], "expected_genres": ["folk", "jazz_blues", "country"]},
+  {"id": "urbano_bailable", "scales": [5, 4, 1, 4], "genres": ["latin", "hip_hop"],
+   "favorites": ["Bad Bunny", "J Balvin", "Daddy Yankee"], "expected_genres": ["latin", "hip_hop", "reggae"]},
+  {"id": "rock_pesado", "scales": [2, 5, 1, 2], "genres": ["rock", "metal"],
+   "favorites": ["Metallica", "Foo Fighters", "AC/DC"], "expected_genres": ["rock", "metal", "alternative"]},
+  {"id": "pop_electronico", "scales": [5, 4, 1, 4], "genres": ["pop", "electronic"],
+   "favorites": ["Dua Lipa", "Calvin Harris", "Katy Perry"], "expected_genres": ["pop", "electronic", "rnb"]},
+  {"id": "intimo_melancolico", "scales": [2, 2, 4, 1], "genres": ["alternative", "rnb"],
+   "favorites": ["Bon Iver", "Radiohead", "Frank Ocean"], "expected_genres": ["alternative", "folk", "rnb", "jazz_blues"]}
+ ],
+ "catalog_snapshot": {
+  "description": "Artistas del catalogo real de Ticketmaster Discovery observados el 2026-11-26 (ID de atraccion, nombre, genero del proveedor).",
+  "artists": [
+   ["K8vZ9171ueV", "Bob Dylan", "Rock"], ["K8vZ917_FzV", "Camilo", "Latin"],
+   ["K8vZ9175pnV", "Chris de Burgh", "Rock"], ["K8vZ9175yK0", "Don Omar", "Latin"],
+   ["K8vZ9175Yn7", "José González", "Folk"], ["K8vZ917p3-V", "Karol G", "Latin"],
+   ["K8vZ9171sw0", "Lila Downs", "World"], ["K8vZ917bAfV", "Paulo Londra", "Hip-Hop/Rap"]
+  ]
+ }
+}

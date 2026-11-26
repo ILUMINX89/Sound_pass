@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=prefs-3steps">
 </head>
  
 <body>
@@ -53,6 +53,7 @@
         <div class="account-menu" id="account-menu" hidden>
           <p class="account-menu__greeting" id="account-greeting"></p>
           <button class="account-menu__item" id="account-tickets">Mis boletos</button>
+          <button class="account-menu__item" id="account-prefs">Mis gustos musicales</button>
           <a class="account-menu__item" id="account-admin" href="admin.html" hidden>Administración</a>
           <button class="account-menu__item account-menu__item--danger" id="logout-button">Cerrar sesión</button>
         </div>
@@ -102,6 +103,19 @@
         </div>
       </div>
  
+      <div class="section-wrap" id="prefs-invite" hidden>
+        <div class="prefs-invite"><div><strong>Personaliza tu portada</strong><span>Cuéntanos tus gustos y te mostraremos artistas para ti. Es opcional.</span></div><button type="button" class="btn btn--primary btn--sm" id="prefs-invite-open">Elegir mis gustos</button></div>
+      </div>
+
+      <div class="section-wrap" id="for-you" hidden>
+        <div class="section-head">
+          <h2>Para ti</h2>
+          <button type="button" class="link-btn" id="for-you-edit">Editar mis gustos</button>
+        </div>
+        <p class="for-you__profile" id="for-you-profile"></p>
+        <div class="feature-grid" id="for-you-grid"></div>
+      </div>
+
       <div class="section-wrap">
         <div class="section-head">
           <h2>Conciertos destacados</h2>
@@ -144,10 +158,10 @@
         <div class="listing-main">
           <div class="listing-head">
             <h2 id="concert-count">Conciertos (0)</h2>
-            <select class="sort-select" id="sort-select">
+            <select class="sort-select" id="sort-select" aria-label="Orden de conciertos">
               <option value="date">Más próximos</option>
-              <option value="price_asc">Precio: menor a mayor</option>
-              <option value="price_desc">Precio: mayor a menor</option>
+              <option value="price_asc">Precio: menor a mayor por moneda</option>
+              <option value="price_desc">Precio: mayor a menor por moneda</option>
             </select>
           </div>
  
@@ -166,6 +180,7 @@
         Volver a conciertos
       </button>
  
+      <p id="detail-load" role="status"></p>
       <div class="detail-layout">
         <div class="detail-left">
           <div class="detail-poster dynamic-art">
@@ -182,6 +197,7 @@
             <span class="stage-map__label">ESCENARIO</span>
             <div id="stage-zones" class="stage-zones"></div>
           </div>
+          <section id="official-seatmap" hidden></section>
         </div>
  
         <aside class="ticket-panel">
@@ -653,7 +669,80 @@
     </div>
   </div>
  
-  <script src="script.js"></script>
+  <!-- ============ PREFERENCES MODAL ============ -->
+  <div class="modal-overlay" id="prefs-modal" hidden>
+    <div class="modal prefs-modal" role="dialog" aria-modal="true" aria-labelledby="prefs-step-title">
+      <div class="prefs-header">
+        <div class="prefs-brand" aria-hidden="true">
+          <span class="brand__mark">
+            <span class="bar bar--1"></span><span class="bar bar--2"></span><span class="bar bar--3"></span><span class="bar bar--4"></span>
+          </span>
+          <span>SoundPass</span>
+        </div>
+        <div class="prefs-header__actions">
+          <button type="button" class="prefs-skip-link" id="prefs-skip">Omitir</button>
+          <button type="button" class="prefs-close-btn" id="prefs-close" aria-label="Cerrar">×</button>
+        </div>
+      </div>
+
+      <div class="prefs-progress">
+        <div class="prefs-progress__track" role="progressbar" id="prefs-progressbar" aria-label="Progreso del cuestionario" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
+          <div class="prefs-progress__fill" id="prefs-progress-fill" style="width: 33.33%"></div>
+        </div>
+        <span class="prefs-progress__label" id="prefs-progress-label">1 de 3</span>
+      </div>
+
+      <form class="prefs-form" id="prefs-form" novalidate>
+        <div class="prefs-body" id="prefs-body">
+          <!-- Paso 1: Géneros -->
+          <section class="prefs-step" data-prefs-step="1">
+            <h2 class="prefs-step__title" id="prefs-step-title" tabindex="-1">¿Qué géneros escuchas?</h2>
+            <p class="prefs-step__sub">Elige hasta 5</p>
+            <div class="prefs-genre-grid" id="prefs-genres" role="group" aria-label="Géneros musicales"></div>
+            <p class="prefs-counter" id="prefs-genre-count" aria-live="polite">0 seleccionados</p>
+          </section>
+
+          <!-- Paso 2: Artistas -->
+          <section class="prefs-step" data-prefs-step="2" hidden>
+            <h2 class="prefs-step__title" data-step-heading tabindex="-1">Tus artistas favoritos</h2>
+            <p class="prefs-step__sub">Elige hasta 8</p>
+            <label class="prefs-search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+              <input id="prefs-artist-search" type="search" placeholder="Buscar artista" autocomplete="off" aria-label="Buscar artista">
+            </label>
+            <div class="prefs-selected-row" id="prefs-selected-artists" aria-live="polite"></div>
+            <p class="prefs-counter prefs-counter--left" id="prefs-artist-count" aria-live="polite">0 de 8 seleccionados</p>
+            <div class="prefs-artist-list" id="prefs-artists" role="list" aria-label="Resultados de artistas"></div>
+          </section>
+
+          <!-- Paso 3: Sonido -->
+          <section class="prefs-step" data-prefs-step="3" hidden>
+            <h2 class="prefs-step__title" data-step-heading tabindex="-1">¿Cómo te gusta la música?</h2>
+            <p class="prefs-step__sub">Opcional: ajusta las escalas para afinar tus recomendaciones</p>
+            <label class="prefs-scales-toggle">
+              <input type="checkbox" id="prefs-use-scales">
+              <span>Incluir estas cuatro escalas</span>
+            </label>
+            <div class="prefs-scales-list" id="prefs-scales"></div>
+          </section>
+        </div>
+
+        <div class="prefs-footer">
+          <p class="form-message" id="prefs-message" aria-live="polite"></p>
+          <div class="prefs-footer__actions" id="prefs-footer-actions">
+            <button type="button" class="btn prefs-btn-back" id="prefs-back" hidden>Atrás</button>
+            <button type="button" class="btn btn--primary prefs-btn-next" id="prefs-next">Continuar</button>
+            <button type="submit" class="btn btn--primary prefs-btn-save" id="prefs-save" hidden>Guardar gustos</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js?v=prefs-ai"></script>
 </body>
  
 </html>

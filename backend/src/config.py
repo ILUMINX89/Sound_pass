@@ -25,6 +25,20 @@ class Settings(BaseSettings):
     )
 
     ticketmaster_api_key: str = ""
+    ticketmaster_artist_origins: str = "US,MX,CO,AR,PR"
+    seatgeek_client_id: str = ""
+    seatgeek_client_secret: str = ""
+    ollama_base_url: str = ""
+    ollama_model: str = "qwen2.5:1.5b"
+    ollama_timeout_seconds: float = 55.0
+
+    @property
+    def ticketmaster_allowed_origins(self) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(
+            code.strip().upper()
+            for code in self.ticketmaster_artist_origins.split(",")
+            if code.strip()
+        ))
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[1] / ".env", env_file_encoding="utf-8", extra="ignore", hide_input_in_errors=True

@@ -160,7 +160,40 @@ class SpotifyArtistError(Exception):
         self.retry_after = retry_after
 
 
-def get_artist_player(artist_name: str, *, include_images: bool = False):
+def _player(name, artist_id, track_id=None):
+    return {
+        "status": "ok",
+        "artist": {
+            "id": artist_id,
+            "name": name,
+            "spotify_url": f"https://open.spotify.com/artist/{artist_id}",
+            "embed_url": (f"https://open.spotify.com/embed/track/{track_id}" if track_id
+                          else f"https://open.spotify.com/embed/artist/{artist_id}"),
+        },
+        "message": None,
+    }
+
+
+def _artist_track(name, artist_id, token):
+    import re
+
+    query = urlencode({"q": f"artist:{name}", "type": "track", "market": "CO", "limit": 10})
+    request = Request("https://api.spotify.com/v1/search?" + query,
+                      headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
+    try:
+        with urlopen(request, timeout=4) as response:
+            tracks = json.load(response)["tracks"]["items"]
+        for track in tracks:
+            track_id = track.get("id") or ""
+            if (track.get("is_playable", True) and re.fullmatch(r"[A-Za-z0-9]{22}", track_id)
+                    and any(artist.get("id") == artist_id for artist in track.get("artists", []))):
+                return track_id
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        pass
+    return None
+
+
+def get_artist_player(artist_name: str, *, include_images: bool = False, spotify_id=None):
     import re
     import unicodedata
 
@@ -168,6 +201,11 @@ def get_artist_player(artist_name: str, *, include_images: bool = False):
         return " ".join(
             unicodedata.normalize("NFKC", value).casefold().split()
         )
+
+    if spotify_id and re.fullmatch(r"[A-Za-z0-9]{22}", spotify_id) and not include_images:
+        token = get_spotify_token()
+        track_id = _artist_track(artist_name, spotify_id, token) if token else None
+        return _player(artist_name, spotify_id, track_id)
 
     if (
         not settings.spotify_client_id.strip()
@@ -367,20 +405,7 @@ def get_artist_player(artist_name: str, *, include_images: bool = False):
             ),
         }
 
-    return {
-        "status": "ok",
-        "artist": {
-            "id": artist_id,
-            "name": artist["name"],
-            "spotify_url": (
-                f"https://open.spotify.com/artist/{artist_id}"
-            ),
-            "embed_url": (
-                f"https://open.spotify.com/embed/artist/{artist_id}"
-            ),
-        },
-        "message": None,
-    }
+    return _player(artist["name"], artist_id, _artist_track(artist["name"], artist_id, token))
 
 
 def get_artist_gallery(artist_name: str):

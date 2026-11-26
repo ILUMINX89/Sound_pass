@@ -14,7 +14,10 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     server_tokens off;
     root /var/www/soundpass;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data: blob:; frame-src https://open.spotify.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" always;
 
+    location ~ /\. { return 404; }
     # Impide fallback HTML para documentación, incluso con configuración local accidental.
     location ~ ^/(api/)?(docs|redoc|openapi\.json)(/|$) { return 404; }
     location = /api { return 308 /api/; }
