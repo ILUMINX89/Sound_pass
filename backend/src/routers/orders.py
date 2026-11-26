@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from src import models, schemas, security
 from src.database import get_db
+from src.demo_tickets import DEMO_TICKET_ID, DEMO_TICKET_NAME, DEMO_TICKET_STOCK
+from src.demo_tickets import demo_concerts, demo_is_available, demo_ticket_type
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -66,8 +68,30 @@ def create_order(
     total_qty = 0
     order_items: list[models.OrderItem] = []
 
+    demo = any(item.ticket_type_id == DEMO_TICKET_ID for item in payload.items)
+    demo_ticket = None
+    if demo:
+        query, _ = demo_concerts(db)
+        row = query.filter(models.Concert.id == concert.id).one_or_none()
+        if row is None or not demo_is_available(*row):
+            raise HTTPException(status_code=409, detail="Compra de demostración no disponible")
+        if len(payload.items) != 1:
+            raise HTTPException(status_code=400, detail="Selecciona un solo tipo de boleto de demostración")
+        demo_ticket = demo_ticket_type(concert)
+        if demo_ticket is None:
+            demo_ticket = models.TicketType(
+                concert_id=concert.id,
+                name=DEMO_TICKET_NAME,
+                price=0,
+                quantity_available=DEMO_TICKET_STOCK,
+            )
+            db.add(demo_ticket)
+            db.flush()
+        else:
+            db.refresh(demo_ticket, with_for_update=True)
+
     for item in payload.items:
-        ticket_type = (
+        ticket_type = demo_ticket if demo else (
             db.query(models.TicketType)
             .filter(models.TicketType.id == item.ticket_type_id)
             .with_for_update()
@@ -75,6 +99,8 @@ def create_order(
         )
         if not ticket_type or ticket_type.concert_id != concert.id:
             raise HTTPException(status_code=400, detail="Tipo de boleto inválido para este concierto")
+        if not demo and ticket_type.name == DEMO_TICKET_NAME:
+            raise HTTPException(status_code=400, detail="Selecciona el boleto de demostración desde el detalle")
         if item.quantity > ticket_type.quantity_available:
             raise HTTPException(
                 status_code=409,
@@ -91,7 +117,7 @@ def create_order(
         )
         ticket_type.quantity_available -= item.quantity
 
-    service_fee = SERVICE_FEE_PER_TICKET * total_qty
+    service_fee = 0 if demo else SERVICE_FEE_PER_TICKET * total_qty
     total = subtotal + service_fee
 
     order = models.Order(

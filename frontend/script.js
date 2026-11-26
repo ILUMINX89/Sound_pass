@@ -197,12 +197,7 @@ const soldClass = c => stockInfo(c)?.state === "soldout" ? " is-soldout" : "";
 function renderStatus(c) {
   const box = document.getElementById("detail-status"); if (box) box.innerHTML = statusChips(c);
   const btn = document.querySelector('[data-nav="checkout"]'), t = ticketType(), out = !t || Number(t.quantity_available) <= 0;
-  if (btn) { btn.disabled = out; btn.textContent = t && out ? "Agotado" : "Continuar"; }
-}
-function ticketmasterLink(c, text, className) {
-  const url = safeHttpsUrl(c.url);
-  if (!url) return "";
-  return `<a href="${esc(url.href)}" class="${className}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  if (btn) { btn.disabled = out; btn.textContent = t && out ? "Agotado" : c.source === "ticketmaster" ? "Comprar" : "Continuar"; }
 }
 
 const concertKey = c => c.source === "ticketmaster" ? `tm:${c.id}` : String(c.id);
@@ -262,7 +257,7 @@ function renderListing(rows) {
 
 function setExternalTicketPanel(external) {
   const screen = document.getElementById("screen-detail");
-  for (const selector of [".stage-map", ".qty-row", '[data-nav="checkout"]', ".panel-note"]) {
+  for (const selector of [".stage-map", ".panel-note"]) {
     const element = screen.querySelector(selector);
     element.style.display = external ? "none" : "";
   }
@@ -292,9 +287,8 @@ async function openConcert(id) {
       state.selectedConcert.price_source = summary?.price_source ?? null;
       state.selectedConcert.price_kind = summary?.price_kind ?? null;
     }
-    if (!external) {
-      state.selectedTicketTypeId = (c.ticket_types.find(t => t.quantity_available > 0) || c.ticket_types[0])?.id ?? null;
-    }
+    const types = c.ticket_types || [];
+    state.selectedTicketTypeId = (types.find(t => t.quantity_available > 0) || types[0])?.id ?? null;
     layout.hidden = false;
     notice.textContent = "";
     renderDetail();
@@ -323,15 +317,19 @@ function renderDetail() {
     document.querySelector(".meta-info").innerHTML =
       `<p>${fmtDate(c.event_date, true)} · ${fmtTime(c.event_time)}</p><p>${esc(venue(c))}</p>${c.venue.address ? `<p>${esc(c.venue.address)}</p>` : ""}`;
     document.querySelector(".detail-blurb").textContent = "Fuente del evento: Ticketmaster";
-    document.getElementById("ticket-options").innerHTML =
-      `<p><strong>${esc(externalPrice(c))}</strong></p>` + ticketmasterLink(c, "Consultar entradas en Ticketmaster", "btn btn--outline btn--full");
+    const t = ticketType();
+    document.getElementById("ticket-options").textContent = t
+      ? "Entrada de demostración. Sin cobro ni validez para el evento."
+      : "Compra de demostración no disponible para este evento.";
+    document.getElementById("qty-val").textContent = state.qty;
+    renderStatus(c);
     return;
   }
   document.querySelector(".meta-info").innerHTML = `<p><span class="dot">•</span> ${fmtDate(c.event_date, true)} · ${fmtTime(c.event_time)}</p><p><span class="dot">•</span> ${esc(venue(c))}</p>${c.venue.address ? `<p><span class="dot">•</span> ${esc(c.venue.address)}</p>` : ""}<p><span class="dot">•</span> Capacidad: ${Number(c.venue.capacity || 0).toLocaleString("es-CO")} personas</p>`; document.querySelector(".detail-blurb").textContent = c.description || "Información adicional no disponible.";
   document.getElementById("stage-zones").innerHTML = c.ticket_types.map((t, i) => `<div class="stage-zone" style="width:${Math.min(96, 42 + i * 18)}%">${esc(t.name)}</div>`).join(""); document.getElementById("ticket-options").innerHTML = c.ticket_types.length ? c.ticket_types.map(t => `<label class="ticket-option ${t.id === state.selectedTicketTypeId ? "is-selected" : ""} ${t.quantity_available < 1 ? "is-disabled" : ""}" data-ticket-type="${t.id}"><span class="ticket-option__left"><span class="radio-outer"><span class="radio-inner"></span></span><span>${esc(t.name)}<small class="${typeStock(t).cls}">${typeStock(t).text}</small></span></span><span class="ticket-option__price">${fmtCOP(t.price)}</span></label>`).join("") : `<p class="form-message is-error">No hay tipos de boleto disponibles.</p>`; document.getElementById("qty-val").textContent = state.qty; document.querySelector('[data-nav="checkout"]').disabled = !ticketType(); renderStatus(c); loadSpotify(c);
 }
 function renderCheckout() {
-  const c = concert(), t = ticketType(); if (!c || !t) return goTo("listing"); const subtotal = Number(t.price) * state.qty, fee = 6000 * state.qty, total = subtotal + fee, box = document.querySelector(".summary-card"); box.querySelector(".summary-art").outerHTML = art(c, "thumb summary-art"); box.querySelector(".summary-item__title").textContent = c.artist; box.querySelector(".summary-item__sub").textContent = c.tour_name; const meta = box.querySelectorAll(".summary-item__meta"); meta[0].textContent = `${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}`; meta[1].textContent = venue(c); const rows = box.querySelectorAll(".summary-rows div"); rows[0].querySelector("dd").textContent = t.name; document.getElementById("co-qty").textContent = state.qty; rows[2].querySelector("dd").textContent = fmtCOP(t.price); document.getElementById("co-subtotal").textContent = fmtCOP(subtotal); document.getElementById("co-service-fee").textContent = fmtCOP(fee); document.getElementById("co-total").textContent = fmtCOP(total); document.getElementById("pay-button-label").textContent = `Pagar ${fmtCOP(total)}`;
+  const c = concert(), t = ticketType(); if (!c || !t) return goTo("listing"); const subtotal = Number(t.price) * state.qty, fee = c.source === "ticketmaster" ? 0 : 6000 * state.qty, total = subtotal + fee, box = document.querySelector(".summary-card"); box.querySelector(".summary-art").outerHTML = art(c, "thumb summary-art"); box.querySelector(".summary-item__title").textContent = c.artist; box.querySelector(".summary-item__sub").textContent = c.tour_name; const meta = box.querySelectorAll(".summary-item__meta"); meta[0].textContent = `${fmtDate(c.event_date)} · ${fmtTime(c.event_time)}`; meta[1].textContent = venue(c); const rows = box.querySelectorAll(".summary-rows div"); rows[0].querySelector("dd").textContent = t.name; document.getElementById("co-qty").textContent = state.qty; rows[2].querySelector("dd").textContent = fmtCOP(t.price); document.getElementById("co-subtotal").textContent = fmtCOP(subtotal); document.getElementById("co-service-fee").textContent = fmtCOP(fee); document.getElementById("co-total").textContent = fmtCOP(total); document.getElementById("pay-button-label").textContent = c.source === "ticketmaster" ? "Confirmar compra de demostración" : `Pagar ${fmtCOP(total)}`;
 }
 function renderSuccess() { const o = state.lastOrder; if (!o) return; document.getElementById("success-order").innerHTML = `<div class="order-card__head"><span>Orden #${esc(o.order_code)}</span><span class="order-card__date">${fmtDateTime(o.created_at)}</span></div><div class="summary-item">${art(o.concert, "thumb")}<div><p class="summary-item__title">${esc(o.concert.artist)}</p><p class="summary-item__sub">${esc(o.concert.tour_name)}</p><p class="summary-item__meta">${fmtDate(o.concert.event_date)} · ${fmtTime(o.concert.event_time)}</p><p class="summary-item__meta">${esc(venue(o.concert))}</p></div></div><div class="order-card__divider"></div><div class="order-card__row"><span>Boletos:</span><span>${o.items.map(i => `${i.quantity} × ${esc(i.ticket_type_name)}`).join(", ")}</span></div><div class="order-card__row"><span>Subtotal:</span><span>${fmtCOP(o.subtotal)}</span></div><div class="order-card__row"><span>Cargo por servicio:</span><span>${fmtCOP(o.service_fee)}</span></div><div class="order-card__row"><span>Estado:</span><span>${o.status === "confirmed" ? "Confirmada" : "Cancelada"}</span></div><div class="order-card__row order-card__row--total"><span>Total:</span><span>${fmtCOP(o.total)}</span></div>`; }
  
@@ -367,7 +365,7 @@ document.getElementById("auth-close").onclick = closeAuth; document.getElementBy
 document.querySelectorAll(".payment-option").forEach(o => o.onclick = () => { document.querySelectorAll(".payment-option").forEach(x => x.classList.remove("is-selected")); o.classList.add("is-selected"); o.querySelector("input").checked = true; });
 document.getElementById("login-form").onsubmit = async e => { e.preventDefault(); const btn = e.currentTarget.querySelector("[type=submit]"); if (btn.disabled) return; btn.disabled = true; message("login-message", "", false); const f = new FormData(e.currentTarget); try { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ email: f.get("email"), password: f.get("password") }) }); localStorage.setItem("soundpass_token", r.access_token); state.currentUser = await api("/auth/me"); renderAccount(); const next = state.pendingScreen; closeAuth(); if (next) goTo(next); } catch (err) { message("login-message", err.message); } finally { btn.disabled = false; } };
 document.getElementById("register-form").onsubmit = async e => { e.preventDefault(); const btn = e.currentTarget.querySelector("[type=submit]"); if (btn.disabled) return; btn.disabled = true; message("register-message", "", false); const f = new FormData(e.currentTarget); try { await api("/auth/register", { method: "POST", body: JSON.stringify({ full_name: f.get("full_name"), email: f.get("email"), password: f.get("password") }) }); try { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ email: f.get("email"), password: f.get("password") }) }); localStorage.setItem("soundpass_token", r.access_token); state.currentUser = await api("/auth/me"); renderAccount(); closeAuth(); openPrefs("onboarding"); } catch { document.getElementById("login-email").value = f.get("email"); setAuthView("login"); message("login-message", "Cuenta creada. Ahora inicia sesión.", false); } } catch (err) { message("register-message", err.message); } finally { btn.disabled = false; } };
-document.getElementById("pay-button").onclick = async () => { if (!token()) return openAuth("checkout"); const b = document.getElementById("pay-button"), c = concert(), t = ticketType(), text = document.querySelector(".payment-option.is-selected").textContent, payment = text.includes("PSE") ? "pse" : text.includes("Nequi") ? "nequi" : "card"; b.disabled = true; document.getElementById("pay-button-label").textContent = "Procesando compra…"; try { state.lastOrder = await api("/orders", { method: "POST", body: JSON.stringify({ concert_id: c.id, payment_method: payment, items: [{ ticket_type_id: t.id, quantity: state.qty }] }) }); renderSuccess(); goTo("success"); } catch (err) { alert(err.message); } finally { b.disabled = false; renderCheckout(); } };
+document.getElementById("pay-button").onclick = async () => { if (!token()) return openAuth("checkout"); const b = document.getElementById("pay-button"), c = concert(), t = ticketType(), text = document.querySelector(".payment-option.is-selected").textContent, payment = text.includes("PSE") ? "pse" : text.includes("Nequi") ? "nequi" : "card"; b.disabled = true; document.getElementById("pay-button-label").textContent = "Procesando compra…"; try { state.lastOrder = await api("/orders", { method: "POST", body: JSON.stringify({ concert_id: c.checkout_concert_id ?? c.id, payment_method: payment, items: [{ ticket_type_id: t.id, quantity: state.qty }] }) }); renderSuccess(); goTo("success"); } catch (err) { alert(err.message); } finally { b.disabled = false; renderCheckout(); } };
 // HU-48: authenticated PDF ticket download.
 document.getElementById("download-receipt").onclick = async function () {
   const button = this;

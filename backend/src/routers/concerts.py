@@ -12,6 +12,7 @@ from src.ticketmaster import (
     spotify_identity,
 )
 from src.database import get_db
+from src.demo_tickets import INACTIVE_STATUSES, demo_concerts, demo_is_available, demo_ticket_preview
 from src.spotify import (
     SpotifyArtistError,
     get_artist_gallery,
@@ -150,7 +151,17 @@ def _external_event(event_id, db):
 @router.get("/ticketmaster/{event_id}")
 def get_external_concert(event_id: str, db: Session = Depends(get_db)):
     card, _, _ = _external_event(event_id, db)
-    return add_fallback_price(card)
+    detail = {**add_fallback_price(card), "ticket_types": []}
+    if (card.get("status") or "").lower() in INACTIVE_STATUSES:
+        return detail
+
+    query, external_id = demo_concerts(db)
+    row = query.filter(external_id == event_id).one_or_none()
+    if row is not None and demo_is_available(*row):
+        concert = row[0]
+        detail["checkout_concert_id"] = concert.id
+        detail["ticket_types"] = [demo_ticket_preview(concert)]
+    return detail
 
 
 @router.get("/ticketmaster/{event_id}/spotify")
