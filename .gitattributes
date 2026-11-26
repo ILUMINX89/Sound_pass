@@ -1,0 +1,2 @@
+# The recommendation manifest hashes the exact bytes of these JSON files.
+backend/src/recommendation/artifacts/*.json text eol=lf
