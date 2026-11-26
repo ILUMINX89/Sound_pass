@@ -582,6 +582,17 @@ JWT de ejemplo: HTTPS y la topología real de la VM todavía deben verificarse.
 
 ## Kubernetes y monitoreo (Proyecto 3)
 
+### Inicializar el catálogo de Ticketmaster en Minikube
+
+Con PostgreSQL listo y `TICKETMASTER_API_KEY` configurada en `k8s/secret.yaml`, ejecuta desde PowerShell:
+
+```powershell
+.\scripts\sync-catalog-minikube.ps1
+```
+
+El script construye la imagen del importador desde el commit `5415c95`, aplica la migración y ejecuta una sincronización por origen del artista. Comprueba `cycle=success` y `published` en los logs. Con el port-forward del frontend abierto, consulta `/api/concerts/ticketmaster?q=` y comprueba que devuelve eventos. Ejecuta este paso al inicializar un volumen nuevo de PostgreSQL.
+
+
 La aplicación corre en un clúster local de **Minikube**. La API tiene 2 réplicas (hasta 5 con autoescalado), PostgreSQL corre dentro del clúster con un disco persistente, y Prometheus y Grafana miden la API.
 
 ### Arquitectura
